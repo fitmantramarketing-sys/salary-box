@@ -35,6 +35,7 @@ Screens render differently by role — the same route shows different UI to Owne
 /leave/:applicationId
 /leave/policies
 /leave/holidays
+/leave/comp-off/request
 
 /reports
 /reports/attendance
@@ -52,6 +53,7 @@ Screens render differently by role — the same route shows different UI to Owne
 /settings/geofence
 /settings/notifications
 /settings/onboarding-checklist
+/settings/app-config
 ```
 
 ---
@@ -109,12 +111,14 @@ Screens render differently by role — the same route shows different UI to Owne
 **HR sees:**
 - Check-in status summary (who has checked in today, who hasn't)
 - Pending leave approvals queue (count + quick approve/reject)
+- Pending cancellation requests count (leave applications with cancellation_requested = true)
 - Pending regularization requests (count)
 - Team on leave today (names)
 - Upcoming exits (exit_date within 7 days)
 
 **Employee sees:**
 - Check-in / check-out button (prominent, primary action)
+- Log WFH button (for today — toggles is_wfh on today's attendance record)
 - Today's attendance status
 - Leave balance cards (per leave type)
 - Upcoming approved leaves
@@ -166,7 +170,7 @@ Screens render differently by role — the same route shows different UI to Owne
 **On submit:** Employee record created, Supabase Auth account created, welcome email sent, `is_first_login = true`, onboarding checklist rows created for this employee.
 
 **Primary tables (write):** `employees`, `employee_documents`, `employee_bank_details`, `employee_onboarding_progress`
-**Edge cases:** Duplicate email → block with message. Duplicate PAN/Aadhar → block, allow Owner override with reason.
+**Edge cases:** Duplicate email → block with message. Duplicate PAN/Aadhar → block (via document_hash), allow Owner override with reason.
 
 ---
 
@@ -182,9 +186,10 @@ Screens render differently by role — the same route shows different UI to Owne
 5. **Attendance:** Summary of current month attendance. Link to full attendance view.
 6. **Leave:** Current leave balances per type. Recent applications.
 7. **Onboarding:** Checklist progress.
+8. **Org Chart** (P2): Auto-generated org chart showing this employee's position. Clickable nodes.
 
 **Actions (Owner):** Edit profile, lifecycle events (promote, transfer, salary revision, resign, terminate), deactivate
-**Actions (HR):** Edit non-sensitive fields, add documents, add lifecycle events (non-termination)
+**Actions (HR):** Edit non-sensitive fields, add documents, add lifecycle events (non-termination, non-salary-revision)
 
 **Primary tables:** `employees`, `departments`, `designations`, `employee_documents`, `employee_bank_details`, `employee_lifecycle_events`, `attendance_records`, `leave_balances`, `leave_applications`, `employee_onboarding_progress`
 
@@ -192,9 +197,9 @@ Screens render differently by role — the same route shows different UI to Owne
 
 #### S-08 — Edit Employee
 **Route:** `/employees/:id/edit`
-**Access:** Owner (all fields), HR (limited fields)
+**Access:** Owner (all fields), HR (limited fields per ROLE_RULES)
 **Layout:** Same fields as S-06 but in single-page edit mode with sections
-**Primary tables (write):** `employees`, `employee_lifecycle_events` (for salary/designation changes)
+**Primary tables (write):** `employees`, `employee_lifecycle_events` (for designation/department changes)
 
 ---
 
@@ -237,11 +242,12 @@ Screens render differently by role — the same route shows different UI to Owne
 **Owner / HR sees:**
 - Month/week selector
 - Team attendance grid: rows = employees, columns = days, cells = colour-coded status
-- Status legend
+- Status legend (includes WFH)
 - Summary row: total present %, total absent, total on leave, total WFH per day
 - Filters: department, employee
 - Export to CSV button
 - Quick action: approve pending regularization (badge count on nav)
+- Pending cancellation requests badge (leave applications with cancellation_requested = true)
 
 **Primary tables:** `attendance_records`, `employees`, `departments`, `holidays`
 
@@ -254,10 +260,10 @@ Screens render differently by role — the same route shows different UI to Owne
 **Shows:**
 - Employee name, photo, department
 - Month selector
-- Calendar showing daily status with check-in/check-out times on hover
-- Summary: present days, absent, late marks, overtime hours
+- Calendar showing daily status (including WFH) with check-in/check-out times on hover
+- Summary: present days, WFH days, absent, late marks, overtime hours
 - Regularization requests for this employee (pending, history)
-- Manual entry button (Owner/HR)
+- Manual entry button (Owner/HR) — includes WFH toggle
 - Overtime approval table
 
 **Primary tables:** `attendance_records`, `attendance_regularization_requests`, `employees`, `shifts`
@@ -270,21 +276,22 @@ Screens render differently by role — the same route shows different UI to Owne
 
 **Shows:**
 - Check-in / check-out button (if not already on dashboard — same component)
-- Current month calendar (own records only), colour-coded
-- Drill-down: click a day → see check-in time, check-out time, total hours, status
-- Summary: present count, absent, late marks, leaves taken this month
-- Regularization request button (for past N days only)
+- Log WFH button — visible if not yet checked in and WFH not already logged today. Calls Edge Function to set `is_wfh = true` on today's attendance record.
+- Current month calendar (own records only), colour-coded (WFH shown distinctly)
+- Drill-down: click a day → see check-in time, check-out time, total hours, status, WFH flag
+- Summary: present count, WFH count, absent, late marks, leaves taken this month
+- Regularization request button (for past N days only — N from app_config)
 - Regularization history: own requests with status
 
-**Primary tables:** `attendance_records`, `attendance_regularization_requests`, `shifts`
+**Primary tables:** `attendance_records`, `attendance_regularization_requests`, `shifts`, `app_config`
 
 ---
 
 #### S-14 — Regularization Request Form
 **Route:** Modal or `/attendance/regularize/:date` (employee)
-**Access:** Employee (own records only, within allowed past-days window)
+**Access:** Employee (own records only, within allowed past-days window from app_config)
 
-**Fields:** Date (pre-filled), requested status, requested check-in time (optional), requested check-out time (optional), reason (required)
+**Fields:** Date (pre-filled), requested status (includes WFH option), requested check-in time (optional), requested check-out time (optional), reason (required)
 **On submit:** Creates `attendance_regularization_requests` row, notifies HR/Owner.
 **Primary tables (write):** `attendance_regularization_requests`
 
@@ -300,6 +307,7 @@ Screens render differently by role — the same route shows different UI to Owne
 
 **Shows:**
 - Pending approvals queue: list of pending `leave_applications` with employee name, type, dates, days count. Approve/reject inline with optional comment.
+- Pending cancellation queue: list of applications where `cancellation_requested = true`. Confirm/reject cancellation inline.
 - Team leave calendar: monthly view, colour-coded by leave type. Who is on leave on each day.
 - Leave balance overview table: all employees × all leave types.
 - Filters: department, leave type, date range.
@@ -315,10 +323,12 @@ Screens render differently by role — the same route shows different UI to Owne
 **Shows:**
 - Balance cards: one card per active leave type. Shows available balance, taken, pending.
 - Apply Leave button (primary CTA).
-- My leave history: all applications, sortable by date, status badge.
+- My leave history: all applications, sortable by date, status badge. Cancellation-requested applications shown with a distinct badge.
 - Upcoming approved leaves highlighted.
+- Comp-off history: list of all comp-off requests with status, worked date, expiry date, and credit balance.
+- Request Comp-Off button → navigates to S-21.
 
-**Primary tables:** `leave_balances`, `leave_applications`, `leave_types`
+**Primary tables:** `leave_balances`, `leave_applications`, `leave_types`, `comp_off_requests`
 
 ---
 
@@ -327,21 +337,23 @@ Screens render differently by role — the same route shows different UI to Owne
 **Access:** Owner, HR, Employee
 
 **Fields:**
-- Leave type (dropdown of active types available to this employee)
-- Date range picker (holidays greyed, existing leaves highlighted)
+- Leave type (dropdown of active types available to this employee — filtered by applicable_gender if set)
+- Date range picker (holidays greyed, existing leaves highlighted, optional holidays shown if opted in)
 - Working days count display (computed live, auto-excludes holidays and weekly-offs)
 - Half-day toggle (if single day) → morning / afternoon selector
 - Reason (text, required)
 - Attachment upload (required if `leave_type.requires_attachment = true` or if > `attachment_required_after_days`)
 - Current balance for selected type shown live
 
-**Validations before submit:**
-- Balance sufficient (or LWP warning if negative allowed)
-- No overlapping pending/approved leave for same date range
-- Min notice days satisfied
-- Date range within policy constraints
+**Validations before submit (Edge Function enforces all):**
+- Balance sufficient (or LWP warning if negative allowed) — BR-LVE-02
+- No overlapping pending/approved leave for same date range — BR-LVE-03
+- Min notice days satisfied (Owner/HR exempt) — BR-LVE-16
+- Max consecutive days not exceeded — BR-LVE-15
+- Employee gender matches applicable_gender of leave type — BR-LVE-17
+- Attachment present if required — BR-LVE-13
 
-**On submit:** Creates `leave_applications` row, holds `working_days_count` in `leave_balances.pending`, notifies HR/Owner.
+**On submit:** Creates `leave_applications` row, holds `working_days_count` in `leave_balances.pending`, notifies HR/Owner (or Owner directly if manager is on leave).
 
 **Primary tables (write):** `leave_applications`, `leave_balances` (pending update)
 
@@ -355,9 +367,10 @@ Screens render differently by role — the same route shows different UI to Owne
 - Application details: type, dates, days, reason, attachment
 - Status badge + timeline (applied → reviewed)
 - Reviewer comment
-- Cancellation option (if status = pending or approved future)
+- Cancellation option: "Cancel" if status = pending; "Request Cancellation" if status = approved and from_date > today
+- If cancellation_requested = true: shows "Cancellation Pending Confirmation" banner
 
-**Actions (HR/Owner):** Approve with comment, reject with comment (on pending only)
+**Actions (HR/Owner):** Approve with comment, reject with comment (on pending only); Confirm or reject cancellation (on cancellation_requested = true)
 **Actions (Employee):** Cancel if pending; request cancellation if approved future
 
 **Primary tables:** `leave_applications`, `employees`, `leave_types`
@@ -373,7 +386,7 @@ Screens render differently by role — the same route shows different UI to Owne
 - Edit button per type, Add new type button
 - Toggle active/inactive per type
 
-**Edit form fields:** All columns from `leave_types` table (see DATABASE_SCHEMA.md)
+**Edit form fields:** All columns from `leave_types` table (see DATABASE_SCHEMA.md), including max_consecutive_days, min_notice_days, applicable_gender
 
 **Primary tables (write):** `leave_types`
 
@@ -381,7 +394,7 @@ Screens render differently by role — the same route shows different UI to Owne
 
 #### S-20 — Holiday Calendar Management
 **Route:** `/leave/holidays`
-**Access:** Owner, HR (view and manage); Employee (view only — their own holiday calendar)
+**Access:** Owner, HR (view and manage); Employee (view and opt-in)
 
 **Owner/HR sees:**
 - Full year calendar with holidays marked
@@ -390,9 +403,12 @@ Screens render differently by role — the same route shows different UI to Owne
 
 **Employee sees:**
 - Read-only calendar showing holidays applicable to them
-- Optional holiday selection (if is_optional = true, employee can "opt in")
+- Optional holidays marked with an "Opt In" / "Opted In" toggle button
+- Counter showing remaining optional holiday opt-ins (e.g. "1 of 2 used")
+- Opt-in is only available for future dates
 
-**Primary tables (write):** `holidays`
+**Primary tables (read):** `holidays`, `employee_optional_holidays`, `app_config`
+**Primary tables (write):** `holidays` (Owner/HR); `employee_optional_holidays` (Employee opt-in/out)
 
 ---
 
@@ -423,7 +439,7 @@ Screens render differently by role — the same route shows different UI to Owne
 **Access:** Owner, HR
 
 **Filters:** Month, year, department, employee (optional)
-**Shows:** Table: employee name, present days, absent days, WFH days, on leave days, late marks, overtime hours
+**Shows:** Table: employee name, present days, WFH days, absent days, on leave days, late marks, overtime hours
 **Actions:** Export to CSV
 
 **Primary tables:** `attendance_records`, `employees`, `departments`
@@ -488,7 +504,7 @@ Screens render differently by role — the same route shows different UI to Owne
 **Access:** Employee
 
 **Filters:** Month selector
-**Shows:** Own monthly attendance: days breakdown, check-in/check-out times per day
+**Shows:** Own monthly attendance: days breakdown (including WFH count), check-in/check-out times per day
 **Actions:** Export to CSV (own data only)
 **Primary tables:** `attendance_records`
 
@@ -498,8 +514,8 @@ Screens render differently by role — the same route shows different UI to Owne
 **Route:** `/reports/leave` (employee role)
 **Access:** Employee
 
-**Shows:** Visual summary: per leave type — allotted, taken, pending, available. Leave history table.
-**Primary tables:** `leave_balances`, `leave_applications`, `leave_types`
+**Shows:** Visual summary: per leave type — allotted, taken, pending, available. Leave history table. Comp-off summary: credited, used, expiring.
+**Primary tables:** `leave_balances`, `leave_applications`, `leave_types`, `comp_off_requests`
 
 ---
 
@@ -570,7 +586,7 @@ Screens render differently by role — the same route shows different UI to Owne
 **Access:** Owner (company-wide settings)
 
 **Shows:** Toggles per notification type (email, in-app). SLA thresholds for escalation.
-**Note:** v1 implementation: these are stored as app config, not per-employee preferences.
+**Note:** v1 implementation: these are stored as `app_config`, not per-employee preferences.
 
 ---
 
@@ -580,6 +596,21 @@ Screens render differently by role — the same route shows different UI to Owne
 
 **Shows:** List of checklist items with drag-to-reorder, required toggle, edit, delete.
 **Primary tables (write):** `onboarding_checklist_templates`
+
+---
+
+#### S-39 — App Configuration
+**Route:** `/settings/app-config`
+**Access:** Owner only
+
+**Shows:**
+- Table of all `app_config` entries: key, current value, description, last updated by, last updated at
+- Edit button per row — opens inline edit for the value field
+- Values are validated by type before save (e.g. integers must be numeric, times must be HH:MM:SS)
+
+**Known config keys surfaced here:** `regularization_window_days`, `comp_off_expiry_days`, `leave_sla_business_days`, `optional_holiday_limit_per_year`, `auto_checkout_time`, `rehire_carry_leave_balance`
+
+**Primary tables (write):** `app_config`
 
 ---
 
@@ -605,7 +636,7 @@ Screens render differently by role — the same route shows different UI to Owne
 | S-17 Apply Leave | ✓ | ✓ | ✓ | ✗ |
 | S-18 Leave detail | ✓ | ✓ | Own only | ✗ |
 | S-19 Leave policies | ✓ | ✗ | ✗ | ✗ |
-| S-20 Holiday calendar | Full | Full | Read-only | ✗ |
+| S-20 Holiday calendar | Full | Full | Opt-in only | ✗ |
 | S-21 Comp-off request | ✓ | ✓ | ✓ | ✗ |
 | S-22 Reports home | ✓ | Team reports | Self reports | Read-only |
 | S-23 Attendance report | ✓ | ✓ | ✗ | ✗ |
@@ -624,6 +655,7 @@ Screens render differently by role — the same route shows different UI to Owne
 | S-36 Geofence | ✓ | ✗ | ✗ | ✓ |
 | S-37 Notification settings | ✓ | ✗ | ✗ | ✗ |
 | S-38 Onboarding checklist | ✓ | ✗ | ✗ | ✗ |
+| S-39 App Configuration | ✓ | ✗ | ✗ | ✗ |
 
 *Owner with System Admin privilege only.
 
@@ -638,7 +670,7 @@ Employees  →  List | Add New | Import
 Attendance →  Team View | Reports
 Leave      →  Approvals | Team Calendar | Policies | Holidays
 Reports    →  Attendance | Leave | Headcount | Regularization | Heatmap
-Settings   →  Departments | Designations | Shifts | Roles | IP Whitelist | Geofence | Notifications | Onboarding
+Settings   →  Departments | Designations | Shifts | Roles | IP Whitelist | Geofence | Notifications | Onboarding | App Config
 ```
 
 ### HR sidebar
@@ -653,10 +685,10 @@ Settings   →  Shifts
 
 ### Employee sidebar
 ```
-Dashboard  (check-in/out button prominent)
+Dashboard  (check-in/out + Log WFH button prominent)
 My Profile
 My Attendance
-My Leave   →  Apply | History | Balances
+My Leave   →  Apply | History | Balances | Comp-Off
 My Reports
 ```
 

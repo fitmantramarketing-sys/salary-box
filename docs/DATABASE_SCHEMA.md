@@ -73,7 +73,7 @@ Core master table. Foundation for all other tables. One row per person including
 | join_date | date | NO | — | Can be future (status = future_joiner). |
 | exit_date | date | YES | — | Set on resignation or termination. |
 | probation_end_date | date | YES | — | NULL if not on probation. |
-| current_salary | numeric(12,2) | YES | — | v1: record only. v2: feeds payroll. |
+| current_salary | numeric(12,2) | YES | — | v1: record only. v2: feeds payroll. Updated by Edge Function when salary_revision lifecycle event is inserted (BR-EMP-09). |
 | previous_employee_id | uuid | YES | — | FK → employees.id. Set on rehire to link old record. |
 | is_first_login | boolean | NO | true | Forces password change on first login. |
 | is_active | boolean | NO | true | Soft delete. |
@@ -145,20 +145,26 @@ Document vault. One row per document upload per employee.
 |---|---|---|---|---|
 | id | uuid | NO | gen_random_uuid() | PK |
 | employee_id | uuid | NO | — | FK → employees.id |
-| document_type | text | NO | — | Values: `aadhar`, `pan`, `offer_letter`, `appointment_letter`, `experience_letter`, `other` |
+| document_type | text | NO | — | See check constraint for allowed values. |
 | file_name | text | NO | — | Original file name displayed in UI. |
 | storage_path | text | NO | — | Supabase Storage path. Format: `employee-documents/{employee_id}/{uuid}.{ext}` |
 | file_size_bytes | integer | NO | — | Enforced ≤ 5,242,880 (5 MB). |
 | mime_type | text | NO | — | Allowed: `application/pdf`, `image/jpeg`, `image/png` |
+| document_hash | text | YES | — | SHA-256 hash of file content. Computed by Edge Function on upload. Used for duplicate PAN/Aadhar detection (BR-EMP-02). |
 | uploaded_by | uuid | NO | — | FK → employees.id |
 | is_active | boolean | NO | true | Soft delete. |
 | created_at | timestamptz | NO | now() | |
 
-**Check constraints:** `file_size_bytes <= 5242880`
+**Check constraints:**
+- `file_size_bytes <= 5242880`
+- `document_type IN ('aadhar', 'pan', 'offer_letter', 'appointment_letter', 'experience_letter', 'other')`
+
+**Partial unique constraint:** `UNIQUE (document_type, document_hash) WHERE document_type IN ('aadhar', 'pan') AND is_active = true` — prevents the same identity document from being stored against two different employees.
 
 **Indexes:**
 - `idx_employee_documents_employee_id` on `(employee_id)`
 - `idx_employee_documents_type` on `(document_type)`
+- `idx_employee_documents_hash` on `(document_type, document_hash)` WHERE `document_type IN ('aadhar', 'pan')` — duplicate detection lookup
 
 ---
 
@@ -202,7 +208,7 @@ Immutable history of all lifecycle changes. INSERT only — never UPDATE or DELE
 | previous_designation_id | uuid | YES | — | FK → designations.id. Set on promotion. |
 | new_designation_id | uuid | YES | — | FK → designations.id. Set on promotion. |
 | previous_salary | numeric(12,2) | YES | — | Set on salary revision. |
-| new_salary | numeric(12,2) | YES | — | Set on salary revision. |
+| new_salary | numeric(12,2) | YES | — | Set on salary revision. Edge Function also updates employees.current_salary on insert (BR-EMP-09). |
 | reason | text | YES | — | Mandatory for termination. Optional otherwise. |
 | document_path | text | YES | — | Supporting doc in Supabase Storage (termination letter, etc.) |
 | performed_by | uuid | NO | — | FK → employees.id. Who triggered the event. |
@@ -326,6 +332,7 @@ One row per employee per calendar date. Upserted by Edge Function on check-in/ch
 | check_out_lat | numeric(10,7) | YES | — | |
 | check_out_lng | numeric(10,7) | YES | — | |
 | is_geo_flagged | boolean | NO | false | True if GPS pattern looked suspicious. |
+| is_wfh | boolean | NO | false | Set by employee (or HR/Owner on manual entry) to indicate Work From Home. Causes nightly computation to set status = 'work_from_home' per BR-ATT-12. |
 | status | attendance_status | NO | 'absent' | Computed by Edge Function nightly. |
 | total_hours | numeric(4,2) | YES | — | (check_out - check_in) in hours minus break. |
 | overtime_hours | numeric(4,2) | YES | — | Hours beyond shift end_time. |
@@ -371,6 +378,8 @@ Employee requests to correct a past attendance record. Approved by HR/Owner.
 - `idx_regularization_employee_id` on `(employee_id)`
 - `idx_regularization_status` on `(status)` — approval queue
 
+**Partial unique index:** `UNIQUE (attendance_record_id) WHERE status = 'pending'` — enforces one active regularization request per attendance record at a time (BR-ATT-08).
+
 ---
 
 ### 14. `leave_types`
@@ -391,9 +400,9 @@ Configurable leave type definitions. Managed by Owner.
 | is_lwp | boolean | NO | false | If true, deducted from salary (v2). |
 | requires_attachment | boolean | NO | false | |
 | attachment_required_after_days | smallint | YES | — | e.g. 2 = required if leave > 2 days. |
-| max_consecutive_days | smallint | YES | — | NULL = no cap. |
-| min_notice_days | smallint | NO | 0 | Advance notice required. |
-| applicable_gender | gender | YES | — | NULL = all genders. Maternity/paternity use. |
+| max_consecutive_days | smallint | YES | — | NULL = no cap. Enforced in Edge Function on submission (BR-LVE-15). |
+| min_notice_days | smallint | NO | 0 | Advance notice required. Enforced in Edge Function on submission (BR-LVE-16). |
+| applicable_gender | gender | YES | — | NULL = all genders. Used for Maternity/Paternity leave. Enforced in Edge Function (BR-LVE-17). |
 | is_active | boolean | NO | true | |
 | created_at | timestamptz | NO | now() | |
 | updated_at | timestamptz | NO | now() | |
@@ -413,6 +422,7 @@ Current balance per employee per leave type per year. Updated on every leave app
 | leave_type_id | uuid | NO | — | FK → leave_types.id |
 | year | smallint | NO | — | Calendar year e.g. 2026. |
 | opening_balance | numeric(5,2) | NO | 0 | Balance at year start, includes carry-forward from previous year. |
+| carry_forward_amount | numeric(5,2) | NO | 0 | The portion of opening_balance that originated from carry-forward. Set at year-end rollover. Used by carry-forward-lapse Edge Function to remove only the carried portion on expiry (BR-LVE-11). |
 | accrued | numeric(5,2) | NO | 0 | Total accrued so far this year. |
 | taken | numeric(5,2) | NO | 0 | Total approved leaves consumed. |
 | pending | numeric(5,2) | NO | 0 | Days held by pending applications. |
@@ -442,21 +452,23 @@ One row per application. Status: pending → approved/rejected, or cancelled.
 | leave_type_id | uuid | NO | — | FK → leave_types.id |
 | from_date | date | NO | — | |
 | to_date | date | NO | — | |
-| working_days_count | numeric(4,2) | NO | — | Computed at submission: holidays and weekly-offs excluded. |
+| working_days_count | numeric(4,2) | NO | — | Computed at submission: holidays and weekly-offs excluded. Immutable after INSERT. |
 | is_half_day | boolean | NO | false | |
 | half_day_period | text | YES | — | `morning` or `afternoon`. Set only when is_half_day = true. |
 | reason | text | NO | — | |
 | attachment_path | text | YES | — | Supabase Storage path. |
 | status | leave_status | NO | 'pending' | |
-| applied_at | timestamptz | NO | now() | |
-| reviewed_by | uuid | YES | — | FK → employees.id. |
+| applied_at | timestamptz | NO | now() | Immutable after INSERT. |
+| reviewed_by | uuid | YES | — | FK → employees.id. Set only when an actual review action occurs, never pre-assigned. |
 | reviewed_at | timestamptz | YES | — | |
 | reviewer_comment | text | YES | — | |
 | cancelled_by | uuid | YES | — | FK → employees.id. |
 | cancelled_at | timestamptz | YES | — | |
 | cancellation_reason | text | YES | — | |
-| escalated_to | uuid | YES | — | FK → employees.id. Set when HR is on leave and SLA is breached. |
+| escalated_to | uuid | YES | — | FK → employees.id. Set when HR is on leave at submission time (BR-LVE-07) or when leave SLA is breached (BR-LVE-06). |
 | escalated_at | timestamptz | YES | — | |
+| cancellation_requested | boolean | NO | false | Set to true when employee requests cancellation of an approved future leave. Status does not change to 'cancelled' until HR/Owner confirms (BR-LVE-09). |
+| cancellation_requested_at | timestamptz | YES | — | Timestamp when the cancellation request was submitted. |
 
 **Check constraints:**
 - `to_date >= from_date`
@@ -468,6 +480,7 @@ One row per application. Status: pending → approved/rejected, or cancelled.
 - `idx_leave_applications_status` on `(status)` — approval queue
 - `idx_leave_applications_from_date` on `(from_date)` — calendar rendering
 - `idx_leave_applications_reviewed_by` on `(reviewed_by)` — HR queue view
+- `idx_leave_applications_cancellation_requested` on `(cancellation_requested)` WHERE `cancellation_requested = true` — cancellation queue
 
 ---
 
@@ -481,7 +494,7 @@ Company-wide holiday calendar. Seeded for India national holidays; extended by O
 | date | date | NO | — | |
 | name | text | NO | — | e.g. 'Republic Day', 'Diwali' |
 | type | holiday_type | NO | — | |
-| is_optional | boolean | NO | false | Optional holidays: employee may apply up to N per year. |
+| is_optional | boolean | NO | false | Optional holidays: employee may opt in up to `app_config.optional_holiday_limit_per_year` per year. |
 | state_code | text | YES | — | ISO state code. NULL = applicable to all states. e.g. 'GJ' for Gujarat. |
 | year | smallint | NO | — | |
 | created_at | timestamptz | NO | now() | |
@@ -509,7 +522,7 @@ Compensatory off earned by working on holidays or weekly-offs.
 | reviewed_by | uuid | YES | — | FK → employees.id. |
 | reviewed_at | timestamptz | YES | — | |
 | reviewer_comment | text | YES | — | |
-| comp_off_expiry_date | date | YES | — | Set on approval. Default: worked_date + 60 days. |
+| comp_off_expiry_date | date | YES | — | Set on approval. Default: worked_date + app_config.comp_off_expiry_days (default 60). |
 | leave_balance_id | uuid | YES | — | FK → leave_balances.id. Set on approval. |
 | created_at | timestamptz | NO | now() | |
 
@@ -585,6 +598,7 @@ Immutable. Written by database triggers after every INSERT, UPDATE, DELETE on al
 | action | text | NO | — | `INSERT`, `UPDATE`, `DELETE` |
 | actor_id | uuid | YES | — | FK → employees.id. NULL if triggered by system/Edge Function. |
 | actor_role | user_role | YES | — | Snapshot of actor's role at time of action. |
+| actor_system_function | text | YES | — | Set when action is triggered by a scheduled Edge Function (e.g. 'auto_checkout', 'year_end_rollover'). NULL when actor_id is set. Mutually exclusive with actor_id. |
 | old_data | jsonb | YES | — | Previous row. NULL on INSERT. PII columns excluded (see below). |
 | new_data | jsonb | YES | — | New row. NULL on DELETE. PII columns excluded. |
 | ip_address | inet | YES | — | Client IP if available from request context. |
@@ -602,6 +616,50 @@ Immutable. Written by database triggers after every INSERT, UPDATE, DELETE on al
 
 ---
 
+### 23. `app_config`
+
+System-level configuration values. Managed by Owner via Settings (S-39). Read by Edge Functions and the API layer. Seeded with defaults at deployment.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| key | text | NO | — | PK. Config key identifier. |
+| value | text | NO | — | Config value stored as text; parsed to the appropriate type by the consumer. |
+| description | text | YES | — | Human-readable explanation of the config key. |
+| updated_by | uuid | YES | — | FK → employees.id. |
+| updated_at | timestamptz | NO | now() | |
+
+**Known config keys:**
+
+| Key | Value Type | Default | Description |
+|---|---|---|---|
+| `regularization_window_days` | integer | `7` | Max past calendar days an employee can submit a regularization request for. |
+| `comp_off_expiry_days` | integer | `60` | Days after worked_date before an approved comp-off balance expires. |
+| `leave_sla_business_days` | integer | `2` | Business days before a pending leave application is escalated to Owner. |
+| `optional_holiday_limit_per_year` | integer | `2` | Max optional holidays an employee can opt into per calendar year. |
+| `auto_checkout_time` | time string | `23:59:00` | IST time at which the auto-checkout Edge Function triggers each night. |
+| `rehire_carry_leave_balance` | boolean | `false` | If `true`, carry over remaining leave balance on rehire; if `false`, reset to zero. |
+
+---
+
+### 24. `employee_optional_holidays`
+
+Tracks which optional holidays each employee has opted into for the year. Bounded by `app_config.optional_holiday_limit_per_year`. Used in working-day computation (BR-LVE-01) and attendance status computation (BR-ATT-04).
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | NO | gen_random_uuid() | PK |
+| employee_id | uuid | NO | — | FK → employees.id |
+| holiday_id | uuid | NO | — | FK → holidays.id. Must reference a holiday where `is_optional = true`. Validated in Edge Function on insert. |
+| year | smallint | NO | — | Calendar year. Denormalised from `holidays.year` for fast per-year queries. |
+| created_at | timestamptz | NO | now() | |
+
+**Unique constraints:** `(employee_id, holiday_id)`
+
+**Indexes:**
+- `idx_optional_holidays_employee_year` on `(employee_id, year)` — opt-in limit check and working-day computation
+
+---
+
 ## Trigger Requirements
 
 ### `set_updated_at()` trigger
@@ -610,7 +668,7 @@ Immutable. Written by database triggers after every INSERT, UPDATE, DELETE on al
 
 ### `log_changes()` trigger
 - Type: `AFTER INSERT OR UPDATE OR DELETE`
-- Attach to: `employees`, `departments`, `designations`, `employee_documents`, `employee_bank_details`, `employee_lifecycle_events`, `attendance_records`, `attendance_regularization_requests`, `leave_types`, `leave_balances`, `leave_applications`, `comp_off_requests`, `shifts`, `department_shifts`, `employee_shift_overrides`, `holidays`, `onboarding_checklist_templates`, `ip_whitelist`, `geofence_config`
+- Attach to: `employees`, `departments`, `designations`, `employee_documents`, `employee_bank_details`, `employee_lifecycle_events`, `attendance_records`, `attendance_regularization_requests`, `leave_types`, `leave_balances`, `leave_applications`, `comp_off_requests`, `shifts`, `department_shifts`, `employee_shift_overrides`, `holidays`, `onboarding_checklist_templates`, `ip_whitelist`, `geofence_config`, `app_config`, `employee_optional_holidays`
 - Skip: `notifications`, `audit_logs`
 
 ---
@@ -651,6 +709,8 @@ auth.users
         ├─► leave_balances ──► leave_types
         │     └─► comp_off_requests
         ├─► leave_applications ──► leave_types
+        ├─► employee_optional_holidays ──► holidays
         ├─► notifications
         └─► audit_logs
+app_config (standalone — no FK to employees; updated_by is nullable)
 ```

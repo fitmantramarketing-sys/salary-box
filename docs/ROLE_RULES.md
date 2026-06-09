@@ -28,7 +28,7 @@ There are exactly 4 roles: `owner`, `hr`, `employee`, `system_admin`. Role is st
 
 ### Owner
 - Full access to all data across all tables
-- The only role that can configure leave policies, manage roles, and view/edit any employee's bank details
+- The only role that can configure leave policies, manage roles, view/edit any employee's bank details, and insert salary revision lifecycle events
 - Receives all executive-level notifications and reports
 - Can override any RLS-controlled action (e.g. bank detail edits, past attendance changes)
 
@@ -63,20 +63,20 @@ For each table: `SELECT`, `INSERT`, `UPDATE`, `DELETE` policies are listed. "Own
 
 | Operation | Owner | HR | Employee | System Admin |
 |---|---|---|---|---|
-| SELECT | All rows | All rows | Own row only | All rows (read-only) |
+| SELECT | All rows | All rows (see future_joiner note) | Own row only | All rows (see future_joiner note) |
 | INSERT | Yes | No | No | No |
-| UPDATE | All rows | All rows (except role, bank details) | Own non-sensitive fields only (see field rules below) | No |
+| UPDATE | All rows | All rows (except role, bank details, current_salary, auth_id) | Own non-sensitive fields only (see field rules below) | No |
 | DELETE | No (soft delete only — set is_active = false) | No | No | No |
 
 **Employee self-update allowed fields:** `phone`, `personal_email`, `address_line1`, `address_line2`, `city`, `state`, `pincode`, `emergency_contact_name`, `emergency_contact_phone`, `photo_url`
 
 **Employee cannot update:** `role`, `employment_status`, `employment_type`, `department_id`, `designation_id`, `reporting_manager_id`, `join_date`, `exit_date`, `current_salary`, `employee_code`, `email`
 
-**HR cannot update:** `role`, `current_salary` (salary revision goes through `employee_lifecycle_events`), `auth_id`
+**HR cannot update:** `role`, `current_salary` (salary revision goes through `employee_lifecycle_events` and requires Owner), `auth_id`
 
 **Additional RLS condition:** Rows where `is_active = false` are hidden from HR and Employee. Owner and System Admin can see inactive rows by explicitly filtering.
 
-**Future joiner visibility:** Rows where `employment_status = 'future_joiner'` are visible to Owner only until `join_date` is reached, then visible to HR as well.
+**Future joiner visibility:** Rows where `employment_status = 'future_joiner'` are visible to Owner only until `join_date` is reached, then become visible to HR as well. System Admin does NOT see future_joiner rows until `join_date` is reached (same restriction as HR). RLS condition: `employment_status != 'future_joiner' OR join_date <= current_date OR get_my_role() = 'owner'`.
 
 ---
 
@@ -133,9 +133,13 @@ For each table: `SELECT`, `INSERT`, `UPDATE`, `DELETE` policies are listed. "Own
 | Operation | Owner | HR | Employee | System Admin |
 |---|---|---|---|---|
 | SELECT | All rows | All rows | Own events only | All rows |
-| INSERT | Yes | Yes | No | No |
+| INSERT | Yes | Yes (except event_type = 'termination' and 'salary_revision') | No | No |
 | UPDATE | No (immutable) | No | No | No |
 | DELETE | No (immutable) | No | No | No |
+
+**Termination restriction:** Only Owner can insert `event_type = 'termination'`. Enforced in Edge Function before insert.
+
+**Salary revision restriction:** Only Owner can insert `event_type = 'salary_revision'`. Enforced in Edge Function before insert.
 
 ---
 
@@ -188,13 +192,15 @@ For each table: `SELECT`, `INSERT`, `UPDATE`, `DELETE` policies are listed. "Own
 | Operation | Owner | HR | Employee | System Admin |
 |---|---|---|---|---|
 | SELECT | All rows | All rows | Own records only | All rows |
-| INSERT | Yes (manual entry only) | Yes (manual entry only) | Via Edge Function only (check-in/out) | No |
+| INSERT | Yes (manual entry only) | Yes (manual entry only) | Via Edge Function only (check-in/out/WFH log) | No |
 | UPDATE | Yes | Yes (except check_in_time, check_out_time directly) | No — must use regularization request | No |
 | DELETE | No | No | No | No |
 
 **Critical:** `check_in_time` and `check_out_time` must only be set by Edge Functions, never directly from the client. RLS cannot enforce column-level restrictions — enforce this via the Edge Function contract and API layer.
 
 **Manual entry rule:** When `is_manually_entered = true`, `manual_entry_reason` and `manual_entry_by` must be set. Validated in Edge Function before insert.
+
+**WFH logging:** Employee sets `is_wfh = true` via a dedicated Edge Function endpoint (not a direct table update). See BR-ATT-12.
 
 ---
 
@@ -203,7 +209,7 @@ For each table: `SELECT`, `INSERT`, `UPDATE`, `DELETE` policies are listed. "Own
 | Operation | Owner | HR | Employee | System Admin |
 |---|---|---|---|---|
 | SELECT | All rows | All rows | Own requests only | All rows |
-| INSERT | Yes | Yes | Own requests only (max N days back — configurable) | No |
+| INSERT | Yes | Yes | Own requests only (max N days back — from app_config) | No |
 | UPDATE (status change) | Yes | Yes (own team requests) | No | No |
 | DELETE | No | No | No | No |
 
@@ -240,7 +246,7 @@ For each table: `SELECT`, `INSERT`, `UPDATE`, `DELETE` policies are listed. "Own
 | UPDATE (status) | Yes | Yes (pending only) | Cancellation of own pending/future approved only | No |
 | DELETE | No | No | No | No |
 
-**Cancellation rule:** Employee can cancel their own `pending` applications immediately. Employee can request cancellation of `approved` future applications — this sets a `cancellation_requested` flag (add this column if needed) rather than changing status directly. HR must confirm before status changes to `cancelled`.
+**Cancellation rule:** Employee can cancel their own `pending` applications immediately (status → `cancelled`). Employee can request cancellation of `approved` future applications — this sets `leave_applications.cancellation_requested = true` and records `cancellation_requested_at`, not the status. HR/Owner sees these in a "Pending Cancellation" queue and must confirm before status changes to `cancelled`. This field must only be updated by the Edge Function; no direct client write.
 
 ---
 
@@ -252,6 +258,19 @@ For each table: `SELECT`, `INSERT`, `UPDATE`, `DELETE` policies are listed. "Own
 | INSERT | Yes | Yes | No | No |
 | UPDATE | Yes | Yes | No | No |
 | DELETE | Yes | Yes | No | No |
+
+---
+
+### `employee_optional_holidays`
+
+| Operation | Owner | HR | Employee | System Admin |
+|---|---|---|---|---|
+| SELECT | All rows | All rows | Own rows only | All rows |
+| INSERT | Yes | Yes | Own rows only (subject to annual limit in app_config) | No |
+| UPDATE | No | No | No | No |
+| DELETE | Yes | Yes | Own rows only (future dates only — enforced in Edge Function) | No |
+
+**Note:** DELETE (opt-out) is blocked if the employee has an approved leave for that holiday date. Enforced in Edge Function (BR-LVE-18).
 
 ---
 
@@ -274,6 +293,19 @@ For each table: `SELECT`, `INSERT`, `UPDATE`, `DELETE` policies are listed. "Own
 | INSERT | Yes | No | No | Yes |
 | UPDATE | Yes | No | No | Yes |
 | DELETE | Yes | No | No | Yes |
+
+---
+
+### `app_config`
+
+| Operation | Owner | HR | Employee | System Admin |
+|---|---|---|---|---|
+| SELECT | All rows | All rows | No | All rows |
+| INSERT | Yes (seeded at deployment) | No | No | No |
+| UPDATE | Yes | No | No | No |
+| DELETE | No | No | No | No |
+
+**Note:** HR has read access so Edge Functions running in HR context can read config values. Employees do not have direct DB access to app_config; config values needed on the client are surfaced via the API layer.
 
 ---
 
@@ -321,10 +353,11 @@ These are business rules that must be enforced in Edge Functions, not in RLS:
 
 | Scenario | Escalation |
 |---|---|
-| Leave application pending > 2 business days | Auto-escalate: set `leave_applications.escalated_to` = Owner's employee_id. Notify Owner. |
-| HR is on approved leave when leave application arrives | Route to Owner directly at submission time. |
+| Leave application pending > N business days (app_config.leave_sla_business_days) | Auto-escalate: set `leave_applications.escalated_to` = Owner's employee_id. Notify Owner. |
+| Reporting manager is on approved leave when leave application arrives | Set `escalated_to = Owner.id` and `escalated_at = now()` at submission time. `reviewed_by` remains NULL until an actual review action occurs. |
 | Regularization request pending > 2 business days | Notify Owner. HR still primary approver. |
-| Termination action | Only Owner can set `employment_status = 'terminated'`. HR cannot. |
+| Termination action | Only Owner can insert `event_type = 'termination'` into `employee_lifecycle_events`. HR cannot. |
+| Salary revision | Only Owner can insert `event_type = 'salary_revision'`. HR cannot update `current_salary` directly. |
 | Role assignment / change | Only Owner (with System Admin privilege) can change `employees.role`. |
 | Bank detail edit | Only Owner can edit. Employee can submit a request which Owner then applies. |
 
@@ -342,6 +375,7 @@ These are business rules that must be enforced in Edge Functions, not in RLS:
 | View own attendance | YES | YES | YES | YES (read) |
 | View all attendance | YES | YES | NO | YES (read) |
 | Check in / out | YES | YES | YES | NO |
+| Log WFH | YES | YES | YES | NO |
 | Manual attendance entry | YES | YES | NO | NO |
 | Approve regularization | YES | YES | NO | NO |
 | Configure shifts | YES | YES | NO | NO |
@@ -349,9 +383,11 @@ These are business rules that must be enforced in Edge Functions, not in RLS:
 | Apply for leave | YES | YES | YES | NO |
 | Approve / reject leave | YES | YES | NO | NO |
 | Cancel own leave | YES | YES | YES | NO |
+| Request leave cancellation (approved future) | YES | YES | YES | NO |
 | View leave balances (all) | YES | YES | Self only | YES (read) |
 | Manually adjust leave balance | YES | YES | NO | NO |
 | Manage holiday calendar | YES | YES | NO | NO |
+| Opt into optional holidays | YES | YES | YES | NO |
 | Configure IP whitelist | YES | NO | NO | YES |
 | Configure geofence | YES | NO | NO | YES |
 | View audit logs | YES | NO | NO | YES |
@@ -362,5 +398,8 @@ These are business rules that must be enforced in Edge Functions, not in RLS:
 | Export team data | YES | YES | NO | NO |
 | Manage roles and permissions | YES* | NO | NO | NO |
 | View bank details | YES | NO | Self (last4 only) | NO |
+| Manage app config | YES | NO | NO | NO |
+| Terminate employee | YES | NO | NO | NO |
+| Record salary revision | YES | NO | NO | NO |
 
 *Owner can manage roles only when also designated System Admin.
