@@ -24,8 +24,9 @@ inventing an answer.
 Last updated: 2026-06-15
 Active branch: experiment-new-agent
 Just completed: M1 Phase 1–7 (full M1 milestone).
+Current session: Fixed orphaned auth user handling + copy temp password dialog.
 
-Phase 1-2: Bootstrap + Auth Flow (previous session)
+### Phase 1-2: Bootstrap + Auth Flow (previous session)
 - Migration `0009_bootstrap_owner` applied: created first Owner auth.users
   account (fitmantrabyamanatkagzi@gmail.com) + linked `employees` row
   (EMP-2026-0001, role=owner, is_first_login=true). Verified via execute_sql.
@@ -40,7 +41,7 @@ Phase 1-2: Bootstrap + Auth Flow (previous session)
 - RoleGuard.tsx: RequireAuth, RequireRole, RequireFirstPasswordSet.
 - Sonner toast provider, fixed tsconfig/node build issues.
 
-Phase 3-7: Sidebar Nav + CRUD Pages + Edge Function + Dashboard
+### Phase 3-7: Sidebar Nav + CRUD Pages + Edge Function + Dashboard
 - Sidebar (`Sidebar.tsx`) fully rewritten with role-aware navigation groups
   per SCREEN_INVENTORY.md — Owner, HR, Employee, System Admin each see
   their own nav tree.
@@ -66,13 +67,31 @@ Phase 3-7: Sidebar Nav + CRUD Pages + Edge Function + Dashboard
   Fixed CORS issue — was failing because function was only local, not deployed.
   Deployed via `npx supabase functions deploy create-employee`.
 - `npm run typecheck` and `npm run build` both pass clean.
-Known issues: `origin/main` (fitmantramarketing-sys/salary-box on GitHub) was
-reverted to a pre-scaffold state by a PR merge from `upstream/main`
-(`04bbe85`, "Merge pull request #1 from Huzefman/main") — it currently does
-NOT have the scaffold. Local `main`/`dev`/`feature/auth-rbac` and
-`origin/feature/auth-rbac` all have the full scaffold and are correct.
-Do not push local `main` to `origin/main` without reconciling this — resolve
-when `dev` merges into `main` at milestone completion (see PROGRESS.md).
+
+### Current session (2026-06-15) — orphaned auth user fix + copy password
+- **Bug:** Manually deleting an employee from the `employees` table left their
+  Supabase Auth user intact. Re-creating the same person failed with "A user
+  with this email address has already been registered".
+- **Fix:** `create-employee` Edge Function now detects existing auth users,
+  deletes them via `admin.deleteUser()`, then recreates a fresh auth account.
+  Uses a retry loop (attempt → delete on conflict → retry → rollback on
+  failure).
+- **UX:** Replaced the Sonner toast with a `Dialog` showing the temp password
+  in a monospace code block with a copy-to-clipboard button (Check icon on
+  success). Employee detail page is a placeholder (M2 scope).
+- Committed as `21c0006` on `experiment-new-agent`.
+
+### Known issues
+- `origin/main` (fitmantramarketing-sys/salary-box on GitHub) was
+  reverted to a pre-scaffold state by a PR merge from `upstream/main`
+  (`04bbe85`, "Merge pull request #1 from Huzefman/main") — it currently does
+  NOT have the scaffold. Local `main`/`dev`/`feature/auth-rbac` and
+  `origin/feature/auth-rbac` all have the full scaffold and are correct.
+  Do not push local `main` to `origin/main` without reconciling this — resolve
+  when `dev` merges into `main` at milestone completion (see PROGRESS.md).
+- RESEND_API_KEY not configured in Supabase project secrets → welcome email
+  silently fails (non-fatal try/catch).
+- EmployeeDetailPage is a placeholder — not yet implemented (M2 scope).
 
 ## Supabase project access (for agents)
 This repo has a project-scoped Supabase MCP server configured in `.mcp.json`,

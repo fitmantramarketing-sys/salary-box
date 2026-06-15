@@ -168,7 +168,16 @@ Next milestone: M2 — Employee Module (document vault, bulk import, lifecycle e
     `index.ts` + all `_shared/` dependencies (`auth.ts`, `response.ts`,
     `supabase.ts`, `email.ts`) into the Supabase Edge Functions runtime.
   - Verified deployment: OPTIONS preflight returns 200, invalid JWT returns 401.
-- Nothing currently in progress.
+- **2026-06-15 — Orphaned Auth User Fix + Copy Password Dialog**
+  - **Bug:** Manually deleting an employee from the `employees` table left the
+    Supabase Auth user intact, causing `already been registered` on re-creation.
+  - **Fix:** `create-employee` now detects existing auth users via retry loop:
+    attempt `createUser` → if "already registered", `admin.listUsers()` to find
+    user → `admin.deleteUser()` → retry `createUser`. Falls back to rollback.
+  - **UX:** Replaced `toast.success` with a `Dialog` showing the temp password
+    in a monospace code block with a clipboard copy button (Check icon state).
+    Deployed to Supabase Edge Functions runtime.
+  - `npm run typecheck` and `npm run build` both pass clean.
 
 ## Pending (next milestone — M2)
 - Employee document vault (upload/view/download)
