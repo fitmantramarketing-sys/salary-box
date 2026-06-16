@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { loginSchema, type LoginForm as LoginFormType } from '@/features/auth/schemas'
 import { getErrorMessage } from '@/features/auth/utils'
+import { useAuthStore } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -18,9 +18,9 @@ import {
 } from '@/components/ui/form'
 
 export function LoginForm() {
-  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const setLoading = useAuthStore((s) => s.setLoading)
 
   const form = useForm<LoginFormType>({
     resolver: zodResolver(loginSchema),
@@ -31,6 +31,7 @@ export function LoginForm() {
 
   async function onSubmit(values: LoginFormType) {
     setError(null)
+    setLoading(true)
     try {
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: values.email,
@@ -38,16 +39,18 @@ export function LoginForm() {
       })
 
       if (authError) {
+        setLoading(false)
         // Generic error message — never reveal if email exists (per S-01 spec)
         setError('Invalid email or password')
         return
       }
 
-      // Session is set; onAuthStateChange in App.tsx handles the rest
-      // (fetches employee record, sets auth store, redirects)
-      // But we also navigate here as a fallback
-      navigate('/dashboard', { replace: true })
+      // Do NOT navigate here — the onAuthStateChange handler in App.tsx
+      // fetches the employee record, populates the auth store, and redirects.
+      // Navigating before hydration causes a race condition where RequireAuth
+      // sees user=null and redirects back to /login.
     } catch (err) {
+      setLoading(false)
       setError(getErrorMessage(err))
     }
   }

@@ -94,6 +94,8 @@ export default function App() {
         const employee = await hydrateEmployee(session.user)
         if (employee?.is_first_login) {
           navigate('/set-password', { replace: true })
+        } else if (employee) {
+          navigate('/dashboard', { replace: true })
         }
       }
 

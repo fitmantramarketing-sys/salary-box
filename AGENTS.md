@@ -21,13 +21,13 @@ If a rule isn't in your current context, read the relevant doc above before
 inventing an answer.
 
 ## Current status — UPDATE THIS EVERY SESSION
-Last updated: 2026-06-15
+Last updated: 2026-06-16
 Active branch: experiment-new-agent
-Just completed: M2 — Employee Module (full module done).
-Current session: Edge Functions (upload-document, add-lifecycle-event,
-generate-presigned-url, bulk-import-employees, update-employee) + detail tabs
-(Overview/Documents/Bank Details/Lifecycle/Attendance/Leave/Onboarding) + Edit
-Employee page + Bulk Import page + Self-profile editable fields.
+Just completed: Auth bug fixes — race condition + trigger blocking is_first_login.
+Current session: Login flow was broken for new employees with temp passwords.
+Fixed two bugs: (1) race condition in auth flow where RequireAuth redirected to
+/login before employee hydration completed, and (2) enforce_employee_update()
+trigger blocked employees from setting is_first_login = false on password setup.
 
 ### Phase 1-2: Bootstrap + Auth Flow (previous session)
 - Migration `0009_bootstrap_owner` applied: created first Owner auth.users
@@ -116,6 +116,12 @@ Employee page + Bulk Import page + Self-profile editable fields.
   from signing in with their temp password. The fix also added an explicit
   `admin.updateUserById(id, { email_confirm: true })` call in the
   `create-employee` Edge Function as defense-in-depth.
+- The `enforce_employee_update()` trigger on the remote DB has a
+  `if my_role is null then return new; end if;` guard that was added via a
+  prior ad-hoc SQL fix but is NOT reflected in the local migration files
+  (`0002_core.sql`). Migration `0010` was applied directly via `supabase db query`
+  (not through the Supabase MCP `apply_migration` tool), so the Supabase CLI
+  migration history is out of sync. Run `supabase migration repair` to reconcile.
 
 ## Supabase project access (for agents)
 This repo has a project-scoped Supabase MCP server configured in `.mcp.json`,

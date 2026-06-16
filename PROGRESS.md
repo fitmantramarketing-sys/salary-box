@@ -1,7 +1,7 @@
 # Progress Log
 
 ## Current State
-Date: 2026-06-15
+Date: 2026-06-16
 Active branch: experiment-new-agent
 Milestone: M2 — Employee Module (COMPLETE)
 Next milestone: M3 — Attendance Module
@@ -220,6 +220,25 @@ Next milestone: M3 — Attendance Module
   - Fixed `employment_type` enum mismatch: `contract` → `contractor` to match DB schema.
   - All 5 new Edge Functions deployed to production.
   - `npm run typecheck` and `npm run build` both pass clean (787 KB JS, 38.8 KB CSS).
+- **2026-06-16 — Auth Bug Fixes**
+  - **Bug 1 — Race condition in login flow:** `getSession()` resolved with no session
+    on page load, setting `isLoading = false`. When user logged in, `LoginForm.onSubmit`
+    navigated to `/dashboard` before `onAuthStateChange` finished hydrating the employee
+    record. `RequireAuth` saw `isLoading = false, user = null` and redirected back to
+    `/login`, leaving the user stuck on the login page.
+    - **Fix:** Removed `navigate('/dashboard')` from `LoginForm.onSubmit`. Post-login
+      navigation now happens only after `onAuthStateChange` finishes hydration, in
+      `App.tsx`. Added `setLoading(true)` before sign-in to prevent the race.
+    - Files changed: `src/features/auth/components/LoginForm.tsx`, `src/App.tsx`
+  - **Bug 2 — Trigger blocking is_first_login update:** The `enforce_employee_update()`
+    trigger blocked employees from setting `is_first_login = false` on their own row
+    during password setup, returning a 400 Bad Request.
+    - **Fix:** Removed `or new.is_first_login is distinct from old.is_first_login` from
+      the trigger's blocked-field list. Employees can now toggle `is_first_login` during
+      the set-password flow.
+    - Migration `0010_fix_employee_self_update_is_first_login.sql` created locally.
+    - Trigger updated on remote via `supabase db query`.
+  - `npm run typecheck` and `npm run build` both pass clean.
 
 ## Pending (next milestone — M3)
 - Attendance check-in/out with geofence + IP whitelist
