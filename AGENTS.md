@@ -109,6 +109,13 @@ Employee page + Bulk Import page + Self-profile editable fields.
   when `dev` merges into `main` at milestone completion (see PROGRESS.md).
 - RESEND_API_KEY not configured in Supabase project secrets → welcome email
   silently fails (non-fatal try/catch).
+- Supabase Auth project setting `mailer_allow_unverified_email_sign_ins` set to
+  `true` (changed from default `false`). This was required because
+  `admin.createUser({ email_confirm: true })` was not actually confirming emails
+  when `mailer_autoconfirm` was `false` (the default), preventing new employees
+  from signing in with their temp password. The fix also added an explicit
+  `admin.updateUserById(id, { email_confirm: true })` call in the
+  `create-employee` Edge Function as defense-in-depth.
 
 ## Supabase project access (for agents)
 This repo has a project-scoped Supabase MCP server configured in `.mcp.json`,

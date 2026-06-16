@@ -144,6 +144,18 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Explicitly confirm the user's email as a defense-in-depth measure
+    // (works even if project-level mailer_autoconfirm is disabled)
+    if (authUserId) {
+      const { error: confirmError } = await supabase.auth.admin.updateUserById(
+        authUserId,
+        { email_confirm: true }
+      )
+      if (confirmError) {
+        console.error('Failed to confirm email (non-fatal):', confirmError.message)
+      }
+    }
+
     // Link auth_id to employee
     await supabase
       .from('employees')
