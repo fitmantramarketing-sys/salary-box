@@ -32,7 +32,6 @@ pnpm-debug.log*
 .yarn/unplugged
 .yarn/build-state.yml
 .yarn/install-state.gz
-package-lock.json.bak
 
 # ---------------------------
 # Build outputs
