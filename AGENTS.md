@@ -21,17 +21,14 @@ If a rule isn't in your current context, read the relevant doc above before
 inventing an answer.
 
 ## Current status — UPDATE THIS EVERY SESSION
-Last updated: 2026-06-16
+Last updated: 2026-06-17
 Active branch: experiment-new-agent
-Just completed: Document upload fix — missing Storage bucket.
-Current session: The employee Documents tab showed an upload dialog but all
-uploads silently failed. Root cause: the `employee-documents` Storage bucket
-never existed in the Supabase project — the `upload-document` Edge Function
-was deployed and correct, but `supabase.storage.from('employee-documents').upload()`
-hit a bucket-not-found error. Fixed by creating the bucket (private, 5MB limit,
-PDF/JPEG/PNG only) and adding service-role-only Storage RLS policies. Migration
-`0011_create_employee_documents_storage_bucket.sql` created locally. Also added
-bucket-level `file_size_limit` and `allowed_mime_types` as defense-in-depth.
+Just completed: M1 completed — Onboarding first-login screen built.
+Current session: Completed M1 by building the onboarding welcome screen
+(`/onboarding`) that new employees see after setting their password. Shows
+onboarding checklist progress with required/completed items. Also fixed the
+SetPasswordForm redirect to route to `/onboarding` instead of `/dashboard` so
+employees see the welcome screen before the dashboard. M1 now 100% complete.
 
 ### Phase 1-2: Bootstrap + Auth Flow (previous session)
 - Migration `0009_bootstrap_owner` applied: created first Owner auth.users

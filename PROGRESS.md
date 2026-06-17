@@ -1,9 +1,9 @@
 # Progress Log
 
 ## Current State
-Date: 2026-06-16
+Date: 2026-06-17
 Active branch: experiment-new-agent
-Milestone: M2 — Employee Module (COMPLETE)
+Milestone: M1 — Foundation (COMPLETE), M2 — Employee Module (BUILT)
 Next milestone: M3 — Attendance Module
 
 ## Completed
@@ -265,6 +265,18 @@ Next milestone: M3 — Attendance Module
       are bundled.
     - Migration: `0011_create_employee_documents_storage_bucket.sql`
     - `npm run typecheck` and `npm run build` both pass clean.
+- **2026-06-17 — M1 Completion: Onboarding Welcome Screen**
+  - **Remaining M1 deliverable:** The `/onboarding` page was a bare shell with a
+    TODO comment — new employees saw a blank page after setting their password.
+  - **Fix:** Built the full OnboardingPage with welcome message, onboarding
+    checklist progress (using the existing `useEmployeeOnboardingProgress` hook),
+    and a "Continue to Dashboard" button. Uses the same glassmorphism design as
+    the auth pages. Also fixed SetPasswordForm redirect to route to `/onboarding`
+    instead of `/dashboard` so employees see the welcome screen first.
+  - Files changed: `src/pages/OnboardingPage.tsx`,
+    `src/features/auth/components/SetPasswordForm.tsx`
+  - M1 is now **100% complete**.
+  - `npm run typecheck` and `npm run build` both pass clean.
 
 ## Pending (next milestone — M3)
 - Attendance check-in/out with geofence + IP whitelist

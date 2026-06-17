@@ -31,6 +31,7 @@ export function SetPasswordForm() {
   const setAuth = useAuthStore((s) => s.setAuth)
   const user = useAuthStore((s) => s.user)
   const setPasswordRecovery = useAuthStore((s) => s.setPasswordRecovery)
+  const setPostPasswordSetup = useAuthStore((s) => s.setPostPasswordSetup)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -61,17 +62,8 @@ export function SetPasswordForm() {
   async function onSubmit(values: SetPasswordFormType) {
     setError(null)
     try {
-      // Update the Supabase Auth password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: values.password,
-      })
-
-      if (updateError) {
-        setError(getErrorMessage(updateError))
-        return
-      }
-
-      // Update employees.is_first_login = false
+      // 1. Update is_first_login = false first, so any TOKEN_REFRESHED event
+      //    triggered by updateUser below reads the correct value from the DB.
       if (employee) {
         const { error: empError } = await supabase
           .from('employees')
@@ -82,16 +74,28 @@ export function SetPasswordForm() {
           setError(getErrorMessage(empError))
           return
         }
-
-        // Update the local auth store with the updated employee
-        if (user) {
-          setAuth(user, { ...employee, is_first_login: false })
-        }
       }
 
-      // Clear recovery mode and go to dashboard
+      // 2. Update the Supabase Auth password (may trigger TOKEN_REFRESHED)
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: values.password,
+      })
+
+      if (updateError) {
+        setError(getErrorMessage(updateError))
+        return
+      }
+
+      // 3. Update the local auth store with the updated employee
+      if (user && employee) {
+        setAuth(user, { ...employee, is_first_login: false })
+      }
+
+      // 4. Suppress the SIGNED_IN handler from overriding navigation,
+      //    then go to onboarding
+      setPostPasswordSetup(true)
       setPasswordRecovery(false)
-      navigate('/dashboard', { replace: true })
+      navigate('/onboarding', { replace: true })
     } catch (err) {
       setError(getErrorMessage(err))
     }

@@ -95,7 +95,14 @@ export default function App() {
         if (employee?.is_first_login) {
           navigate('/set-password', { replace: true })
         } else if (employee) {
-          navigate('/dashboard', { replace: true })
+          // If the user just completed set-password, don't override the
+          // onboarding navigation — SetPasswordForm handles it.
+          const isPostPasswordSetup = useAuthStore.getState().isPostPasswordSetup
+          if (isPostPasswordSetup) {
+            useAuthStore.getState().setPostPasswordSetup(false)
+          } else {
+            navigate('/dashboard', { replace: true })
+          }
         }
       }
 
