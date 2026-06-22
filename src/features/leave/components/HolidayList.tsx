@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { callEdgeFunction } from '@/lib/edge'
 import { useHolidays, useMyOptionalHolidays } from '../hooks'
 import { useOptInHoliday, useOptOutHoliday } from '../mutations'
 import { useRole } from '@/hooks/useRole'
@@ -92,10 +93,12 @@ export function HolidayList() {
         is_optional: formOptional,
       }
 
+      const affectedDates = [formDate]
       if (editing) {
         const { error } = await supabase.from('holidays').update(payload).eq('id', editing.id)
         if (error) throw error
         toast.success('Holiday updated')
+        if (editing.date !== formDate) affectedDates.push(editing.date)
       } else {
         const { error } = await supabase.from('holidays').insert(payload)
         if (error) throw error
@@ -103,6 +106,12 @@ export function HolidayList() {
       }
 
       qc.invalidateQueries({ queryKey: ['leave', 'holidays'] })
+
+      for (const d of affectedDates) {
+        callEdgeFunction('sync-holiday-attendance', { date: d }).catch(() => {})
+      }
+      qc.invalidateQueries({ queryKey: ['attendance'] })
+
       setDialogOpen(false)
     } catch (e: unknown) {
       const err = e as { message?: string }
@@ -119,6 +128,10 @@ export function HolidayList() {
       if (error) throw error
       toast.success('Holiday deleted')
       qc.invalidateQueries({ queryKey: ['leave', 'holidays'] })
+
+      callEdgeFunction('sync-holiday-attendance', { date: deleteTarget.date }).catch(() => {})
+      qc.invalidateQueries({ queryKey: ['attendance'] })
+
       setDeleteTarget(null)
     } catch (e: unknown) {
       const err = e as { message?: string }

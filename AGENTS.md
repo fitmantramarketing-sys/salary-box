@@ -21,11 +21,12 @@ If a rule isn't in your current context, read the relevant doc above before
 inventing an answer.
 
 ## Current status — UPDATE THIS EVERY SESSION
-Last updated: 2026-06-19
+Last updated: 2026-06-22
 Active branch: experiment-new-agent
-Current session: M4 Leave Module complete (backend + frontend), M3 Phase 5
-complete (IP whitelist, geofence w/ Leaflet map, geolocation wiring), dark mode
-toggle added. M1 + M2 + M3 still 100% complete.
+Current session: M4 completed — all Edge Functions deployed and working.
+Leave submits with attachments, geofence hard-blocks non-owners, holiday sync
+and calendar display fixed. Leave approvals queue not showing (bug deferred).
+M1+M2+M3+M4 code complete. M5 not started.
 
 ### M2 — Complete Feature Set
 - **M2-1 CSV Export:** "Download CSV" button on EmployeesPage header
@@ -69,8 +70,8 @@ toggle added. M1 + M2 + M3 still 100% complete.
   `navigator.geolocation.getCurrentPosition()` before check-in/check-out,
   passing real lat/lng to Edge Functions
 
-### M4 — Leave Module (this session)
-**16 Edge Functions implemented (from TODO stubs to full business logic):**
+### M4 — Leave Module (completed this session)
+**16 Edge Functions deployed:**
 | Function | Role | Key logic |
 |---|---|---|
 | `submit-leave` | owner/hr/employee | BR-LVE-01 to 07, 13, 15-17: gender, notice, working days, overlap, balance, attachment, escalation |
@@ -123,6 +124,19 @@ toggle added. M1 + M2 + M3 still 100% complete.
   dropdown menu panel — shows avatar initials + employee info, Light/Dark/System
   theme options (with active highlight), and Sign Out with LogOut icon
 
+### This session — Geofence Enforcement & M4 Polish
+- **Geofence hard-block**: `check-in` EF now rejects non-owner users who are outside any active geofence zone (403 FORBIDDEN). Location permission denial/timeout also blocked for non-owner.
+- **HolidayList bugs fixed**: Empty state now shows "Add Holiday" button for admin/HR; three early returns consolidated so dialogs (Add/Edit/Delete) are always in the DOM.
+- **opt-in-holiday fixed**: Insert was missing `year` column causing NOT NULL constraint violation.
+- **`sync-holiday-attendance` EF created**: When holidays are added/edited/deleted, attendance records for affected dates are synced (absent→holiday, holiday removed→incomplete).
+- **TeamAttendancePage**: Now fetches `holidays` table and shows holiday-colored cells for future dates even without attendance records.
+- **AttendanceCalendar**: Shows holiday-colored cells for future holiday dates.
+- **All 16 M4 Edge Functions deployed**: Previously only implemented locally, now fully deployed.
+- **upload-leave-attachment EF**: New function for uploading leave attachments to storage, returns `storage_path`.
+- **ApplyLeaveForm**: Added file upload with paperclip button, file picker, upload spinner, filename display, clear button.
+- **submit-leave redeployed**: Was missing from deployed list despite deploy command reporting success.
+- **compute-attendance-status + incomplete-attendance-reminder redeployed**: Both also missing.
+
 ### Bugs Fixed
 - **working-days.ts + holiday.ts**: Removed `.eq('is_active', true)` on `holidays` table (table has no `is_active` column)
 - **LeaveTypeForm**: Fixed blank screen on dialog open — Radix Select crashes with empty string `""` values; changed default to `"all"`, mapped back to `null` on save
@@ -138,12 +152,13 @@ toggle added. M1 + M2 + M3 still 100% complete.
   `compute-attendance-status`, `manual-attendance`,
   `submit-regularization`, `review-regularization`,
   `late-mark-deduction`, `incomplete-attendance-reminder`
-- **M4 (implemented but not deployed):** `submit-leave`, `review-leave`,
-  `cancel-leave`, `request-leave-cancellation`, `confirm-leave-cancellation`,
+- **M4:** `submit-leave`, `review-leave`, `cancel-leave`,
+  `request-leave-cancellation`, `confirm-leave-cancellation`,
   `submit-comp-off`, `review-comp-off`, `opt-in-holiday`, `opt-out-holiday`,
+  `upload-leave-attachment`,
   `monthly-leave-accrual`, `year-end-leave-rollover`, `leave-sla-escalation`,
   `carry-forward-expiry-alert`, `carry-forward-lapse`, `comp-off-expiry-alert`,
-  `comp-off-lapse`
+  `comp-off-lapse`, `sync-holiday-attendance`
 
 ### Known issues
 - `origin/main` on GitHub reverted to pre-scaffold state — local branches correct
@@ -153,7 +168,10 @@ toggle added. M1 + M2 + M3 still 100% complete.
 - **17 cron functions not scheduled** in Supabase Dashboard:
   10 M3 crons + 7 M4 leave crons — all deployed but schedules need configuration
 - All `departments`, `designations`, `shifts` rows hard deleted — re-seed via UI
-- **M4 Edge Functions not deployed** — implemented locally, need `supabase functions deploy`
+- **Leave approvals queue not showing submitted leaves** — PendingLeaveQueue fetches
+  `leave_applications` with `.eq('status', 'pending')` and joins `employee` relation.
+  RLS is correct (owner/hr see all rows). Likely a join syntax issue or the query
+  silently fails. Investigate `fetchPendingLeaveApplications` in `api.ts`.
 
 ## Supabase project access (for agents)
 This repo has a project-scoped Supabase MCP server configured in `.mcp.json`,

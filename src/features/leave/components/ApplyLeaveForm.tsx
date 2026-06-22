@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { callEdgeFunctionFormData } from '@/lib/edge'
 import { useLeaveTypes, useMyLeaveBalances } from '../hooks'
 import { useSubmitLeave } from '../mutations'
 import { submitLeaveSchema, type SubmitLeaveForm } from '../schemas'
@@ -12,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Paperclip, Loader2, X } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -29,6 +31,10 @@ export function ApplyLeaveForm() {
     new Date().getFullYear()
   )
   const submitLeave = useSubmitLeave()
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
+  const [attachmentPath, setAttachmentPath] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const {
     register,
@@ -60,9 +66,38 @@ export function ApplyLeaveForm() {
   const insufficientBalance =
     selectedBalance && availableBalance <= 0 && !selectedBalance.leave_type.allow_negative_balance
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAttachmentFile(file)
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    setUploading(true)
+    try {
+      const result = await callEdgeFunctionFormData<{ storage_path: string; file_name: string }>('upload-leave-attachment', formData)
+      setAttachmentPath(result.storage_path)
+      toast.success('File uploaded')
+    } catch (e: unknown) {
+      const err = e as { message?: string }
+      toast.error(err?.message ?? 'Failed to upload file')
+      setAttachmentFile(null)
+      if (fileRef.current) fileRef.current.value = ''
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const clearAttachment = () => {
+    setAttachmentFile(null)
+    setAttachmentPath(null)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
   const onSubmit = async (data: SubmitLeaveForm) => {
     try {
-      const result = await submitLeave.mutateAsync(data)
+      const result = await submitLeave.mutateAsync({ ...data, attachment_path: attachmentPath })
       toast.success(
         `Leave submitted (${result.working_days_count} working day${result.working_days_count !== 1 ? 's' : ''})`
       )
@@ -194,10 +229,41 @@ export function ApplyLeaveForm() {
             </div>
           )}
 
+          <div className="space-y-2">
+            <Label>Attachment</Label>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Paperclip className="mr-2 h-4 w-4" />}
+                {attachmentFile ? 'Change File' : 'Attach File'}
+              </Button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              {attachmentFile && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="truncate max-w-[200px]">{attachmentFile.name}</span>
+                  <button type="button" onClick={clearAttachment} className="text-destructive hover:text-destructive/80">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           <Button
             type="submit"
             className="w-full"
-            disabled={submitLeave.isPending || !!insufficientBalance}
+            disabled={submitLeave.isPending || uploading || !!insufficientBalance}
           >
             {submitLeave.isPending ? 'Submitting...' : 'Submit Leave'}
           </Button>

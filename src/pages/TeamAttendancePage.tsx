@@ -18,7 +18,7 @@ async function fetchTeamAttendance(year: number, month: number) {
   const lastDay = new Date(year, month, 0).getDate()
   const to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
 
-  const [empRes, attRes] = await Promise.all([
+  const [empRes, attRes, holRes] = await Promise.all([
     supabase
       .from('employees')
       .select('id, first_name, last_name, employee_code, department:departments!department_id(name)')
@@ -29,14 +29,21 @@ async function fetchTeamAttendance(year: number, month: number) {
       .select('*')
       .gte('date', from)
       .lte('date', to),
+    supabase
+      .from('holidays')
+      .select('date')
+      .gte('date', from)
+      .lte('date', to),
   ])
 
   if (empRes.error) throw empRes.error
   if (attRes.error) throw attRes.error
+  if (holRes.error) throw holRes.error
 
   return {
     employees: (empRes.data ?? []) as unknown as EmployeeWithDept[],
     records: (attRes.data ?? []) as AttendanceRecord[],
+    holidayDates: new Set((holRes.data ?? []).map((h) => h.date)),
   }
 }
 
@@ -170,10 +177,13 @@ export default function TeamAttendancePage() {
                       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`
                       const r = recordMap.get(emp.id)?.get(dateStr)
                       const status = r?.status as string | undefined
+                      const isHoliday = !status && data?.holidayDates.has(dateStr)
                       return (
                         <td key={i} className="p-1 text-center">
                           {status && status in STATUS_CLASSES ? (
                             <span className={cn('inline-block h-5 w-5 sm:h-6 sm:w-6 rounded-sm', STATUS_CLASSES[status])} title={getAttendanceStatusLabel(status as AttendanceRecord['status'])} />
+                          ) : isHoliday ? (
+                            <span className={cn('inline-block h-5 w-5 sm:h-6 sm:w-6 rounded-sm', STATUS_CLASSES['holiday'])} title="Holiday" />
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}

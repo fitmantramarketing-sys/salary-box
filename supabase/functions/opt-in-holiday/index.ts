@@ -69,6 +69,7 @@ Deno.serve(async (req: Request) => {
       .insert({
         employee_id: actor.actorId,
         holiday_id,
+        year,
       })
 
     if (insErr) {
