@@ -159,8 +159,11 @@ export function HolidayList() {
   if (!holidays || holidays.length === 0) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Holidays {year}</CardTitle>
+          {isAdminOrHR && (
+            <Button size="sm" onClick={openCreate}>Add Holiday</Button>
+          )}
         </CardHeader>
         <CardContent className="py-8 text-center text-muted-foreground">
           No holidays configured for {year}
