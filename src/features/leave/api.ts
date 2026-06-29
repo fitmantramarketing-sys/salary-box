@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { LeaveBalance, LeaveType, LeaveApplicationWithRelations, CompOffRequest, Holiday } from '@/types'
+import type { LeaveBalance, LeaveType, LeaveApplicationWithRelations, Holiday } from '@/types'
 
 export async function fetchLeaveTypes(): Promise<LeaveType[]> {
   const { data, error } = await supabase
@@ -65,18 +65,6 @@ export async function fetchLeaveApplication(id: string): Promise<LeaveApplicatio
   if (error) throw error
   return data as unknown as LeaveApplicationWithRelations
 }
-
-export async function fetchCompOffRequests(employeeId?: string): Promise<CompOffRequest[]> {
-  let query = supabase
-    .from('comp_off_requests')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (employeeId) query = query.eq('employee_id', employeeId)
-  const { data, error } = await query
-  if (error) throw error
-  return data ?? []
-}
-
 export async function fetchHolidays(year?: number): Promise<Holiday[]> {
   let query = supabase
     .from('holidays')

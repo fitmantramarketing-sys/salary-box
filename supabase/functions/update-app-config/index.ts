@@ -4,7 +4,6 @@ import { ok, err, cors, handleError } from '../_shared/response.ts'
 
 const CONFIG_TYPES: Record<string, 'integer' | 'boolean' | 'time'> = {
   regularization_window_days: 'integer',
-  comp_off_expiry_days: 'integer',
   leave_sla_business_days: 'integer',
   optional_holiday_limit_per_year: 'integer',
   auto_checkout_time: 'time',

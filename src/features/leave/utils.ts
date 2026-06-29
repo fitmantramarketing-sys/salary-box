@@ -13,7 +13,6 @@ export function getLeaveStatusLabel(status: LeaveApplication['status']): string 
 export function getAvailableBalance(balance: LeaveBalance): number {
   return (
     balance.opening_balance +
-    balance.accrued +
     balance.adjusted -
     balance.taken -
     balance.pending

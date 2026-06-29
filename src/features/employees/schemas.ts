@@ -23,6 +23,10 @@ export const createEmployeeSchema = z.object({
   join_date: z.string().min(1, 'Join date is required'),
   probation_end_date: z.string().optional(),
   current_salary: z.number().positive().optional(),
+  leave_allocations: z.array(z.object({
+    leave_type_id: z.string().uuid(),
+    days: z.number().min(0),
+  })).optional(),
 })
 export type CreateEmployeeForm = z.infer<typeof createEmployeeSchema>
 

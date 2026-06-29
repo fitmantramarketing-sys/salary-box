@@ -5,6 +5,7 @@ import {
   fetchHeadcountReport,
   fetchRegularizationLog,
   fetchSelfAttendance,
+  fetchAbsenteeismData,
   fetchDepartments,
 } from './api'
 
@@ -40,6 +41,13 @@ export function useRegularizationLog(dateFrom?: string, dateTo?: string, departm
   return useQuery({
     queryKey: ['reports', 'regularization', dateFrom, dateTo, departmentId, status],
     queryFn: () => fetchRegularizationLog(dateFrom, dateTo, departmentId, status),
+  })
+}
+
+export function useAbsenteeismData(year: number, month: number, departmentId?: string) {
+  return useQuery({
+    queryKey: ['reports', 'absenteeism', year, month, departmentId],
+    queryFn: () => fetchAbsenteeismData(year, month, departmentId),
   })
 }
 

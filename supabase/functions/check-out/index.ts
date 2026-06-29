@@ -2,7 +2,7 @@ import { getActor, assertRole } from '../_shared/auth.ts'
 import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { resolveShift } from '../_shared/shift.ts'
-import { checkDrift } from '../_shared/geo.ts'
+import { checkDrift, checkGeofence } from '../_shared/geo.ts'
 import { computeTotalHours } from '../_shared/attendance.ts'
 
 Deno.serve(async (req: Request) => {
@@ -56,6 +56,15 @@ Deno.serve(async (req: Request) => {
       shift.is_night_shift,
       shift.end_time
     )
+
+    // Geofence enforcement — block checkout if outside any active geofence
+    // (owner bypasses for flexibility)
+    if (actor.actorRole !== 'owner' && latitude != null && longitude != null) {
+      const geoCheck = await checkGeofence(Number(latitude), Number(longitude))
+      if (!geoCheck.inside) {
+        throw { code: 'FORBIDDEN', message: 'Check-out location is outside the allowed geofence area.', status: 403 }
+      }
+    }
 
     let isGeoFlagged = record.is_geo_flagged
     if (

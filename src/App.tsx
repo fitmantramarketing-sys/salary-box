@@ -27,7 +27,6 @@ import RegularizationPage from '@/pages/RegularizationPage'
 import LeaveDashboardPage from '@/pages/LeaveDashboardPage'
 import ApplyLeavePage from '@/pages/ApplyLeavePage'
 import LeaveApplicationDetailPage from '@/pages/LeaveApplicationDetailPage'
-import CompOffPage from '@/pages/CompOffPage'
 import TeamLeavePage from '@/pages/TeamLeavePage'
 import HolidayCalendarPage from '@/pages/HolidayCalendarPage'
 import DepartmentsPage from '@/pages/DepartmentsPage'
@@ -39,6 +38,7 @@ import IPWhitelistPage from '@/pages/IPWhitelistPage'
 import GeofencePage from '@/pages/GeofencePage'
 import SettingsNotificationsPage from '@/pages/SettingsNotificationsPage'
 import SettingsOnboardingPage from '@/pages/SettingsOnboardingPage'
+import SettingsLeaveBalancesPage from '@/pages/SettingsLeaveBalancesPage'
 import EmployeeSelfProfilePage from '@/pages/EmployeeSelfProfilePage'
 import ProfileEditReviewsPage from '@/pages/ProfileEditReviewsPage'
 import ReportsAttendancePage from '@/pages/ReportsAttendancePage'
@@ -177,7 +177,6 @@ export default function App() {
               <Route path="/leave" element={<LeaveDashboardPage />} />
               <Route path="/leave/apply" element={<ApplyLeavePage />} />
               <Route path="/leave/applications/:id" element={<LeaveApplicationDetailPage />} />
-              <Route path="/leave/comp-off/request" element={<CompOffPage />} />
               <Route element={<RequireRole allow={['owner', 'hr']} />}>
                 <Route path="/leave/team" element={<TeamLeavePage />} />
               </Route>
@@ -202,6 +201,9 @@ export default function App() {
                 <Route path="/settings/notifications" element={<SettingsNotificationsPage />} />
                 <Route path="/settings/onboarding-checklist" element={<SettingsOnboardingPage />} />
                 <Route path="/settings/roles" element={<RolesPage />} />
+              </Route>
+              <Route element={<RequireRole allow={['owner', 'hr']} />}>
+                <Route path="/settings/leave-balances" element={<SettingsLeaveBalancesPage />} />
               </Route>
 
               {/* Employee self-profile */}

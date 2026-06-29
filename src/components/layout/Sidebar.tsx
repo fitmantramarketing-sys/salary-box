@@ -62,7 +62,6 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Apply Leave', href: '/leave/apply', roles: ['owner', 'hr', 'employee'] },
       { label: 'Team Leave', href: '/leave/team', roles: ['owner', 'hr'] },
       { label: 'Holiday Calendar', href: '/leave/holidays', roles: ['owner', 'hr', 'employee'] },
-      { label: 'Comp-Off', href: '/leave/comp-off/request', roles: ['owner', 'hr', 'employee'] },
     ],
   },
     {
@@ -94,6 +93,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Onboarding', href: '/settings/onboarding-checklist', roles: ['owner'] },
       { label: 'Role Management', href: '/settings/roles', roles: ['owner'] },
       { label: 'App Config', href: '/settings/app-config', roles: ['owner'] },
+      { label: 'Leave Balances', href: '/settings/leave-balances', roles: ['owner', 'hr'] },
     ],
   },
 ]
@@ -111,7 +111,6 @@ function EmployeeNav({ onItemClick }: { onItemClick?: () => void }) {
         children={[
           { label: 'Apply Leave', href: '/leave/apply' },
           { label: 'Leave Dashboard', href: '/leave' },
-          { label: 'Comp-Off', href: '/leave/comp-off/request' },
           { label: 'Holiday Calendar', href: '/leave/holidays' },
         ]}
         onChildClick={onItemClick}

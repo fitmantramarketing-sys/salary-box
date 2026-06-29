@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
-import { Loader2, ArrowLeft, Copy, Check, Upload, Banknote } from 'lucide-react'
+import { Loader2, ArrowLeft, Copy, Check, Upload, Banknote, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -36,6 +36,7 @@ import { supabase } from '@/lib/supabase'
 import type { CreateEmployeeResponse } from '@/types'
 import { useDepartments, useDesignations, useActiveManagers } from '@/features/employees/hooks'
 import { createEmployeeSchema, type CreateEmployeeForm } from '@/features/employees/schemas'
+import { useLeaveTypes } from '@/features/leave/hooks'
 
 const DOC_TYPES = [
   { value: 'aadhar', label: 'Aadhar' },
@@ -62,6 +63,10 @@ export default function NewEmployeePage() {
   const [confirmAccountNumber, setConfirmAccountNumber] = useState('')
   const [ifscCode, setIfscCode] = useState('')
   const [bankName, setBankName] = useState('')
+
+  // Step 5 — Leave allocations
+  const { data: leaveTypes = [] } = useLeaveTypes()
+  const [leaveAllocations, setLeaveAllocations] = useState<Record<string, number>>({})
 
   const queryClient = useQueryClient()
   const createEmployee = useCreateEmployee()
@@ -106,7 +111,11 @@ export default function NewEmployeePage() {
 
   async function onSubmit(values: CreateEmployeeForm) {
     try {
-      const result = await createEmployee.mutateAsync(values) as CreateEmployeeResponse
+      const leaveAllocPayload = Object.entries(leaveAllocations)
+        .filter(([, days]) => days > 0)
+        .map(([leave_type_id, days]) => ({ leave_type_id, days }))
+      const payload = { ...values, leave_allocations: leaveAllocPayload }
+      const result = await createEmployee.mutateAsync(payload) as CreateEmployeeResponse
 
       // Upload document if one was chosen
       if (docFile && docType && result.employee_id) {
@@ -149,7 +158,7 @@ export default function NewEmployeePage() {
     }
   }
 
-  const steps = ['Personal Info', 'Job Details', 'Documents', 'Bank Details']
+  const steps = ['Personal Info', 'Job Details', 'Documents', 'Bank Details', 'Leave Allocations']
   const isLastStep = step === steps.length - 1
 
   function nextStep() {
@@ -157,7 +166,7 @@ export default function NewEmployeePage() {
       form.trigger(['first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'gender', 'personal_email', 'address_line1', 'address_line2', 'city', 'state', 'pincode', 'emergency_contact_name', 'emergency_contact_phone'] as const).then((v) => { if (v) setStep(step + 1) })
     } else if (step === 1) {
       form.trigger(['department_id', 'designation_id', 'reporting_manager_id', 'role', 'employment_type', 'join_date', 'probation_end_date', 'current_salary'] as const).then((v) => { if (v) setStep(step + 1) })
-    } else {
+    } else if (step < steps.length - 1) {
       setStep(step + 1)
     }
   }
@@ -401,6 +410,46 @@ export default function NewEmployeePage() {
                     <Input id="bank-name" value={bankName} onChange={(e) => setBankName(e.target.value)} />
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {step === 4 && (
+            <Card>
+              <CardHeader>
+                <CardTitle><Calendar className="mr-2 inline h-5 w-5" />Leave Allocations</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Set the yearly paid leave allocation for this employee. These days will be available for the current calendar year.
+                </p>
+                {leaveTypes.filter((lt) => !lt.is_lwp).length === 0 && (
+                  <p className="text-sm text-muted-foreground">No paid leave types configured yet. Create leave types in Settings first.</p>
+                )}
+                {leaveTypes.filter((lt) => !lt.is_lwp).map((lt) => (
+                  <div key={lt.id} className="flex items-center gap-4 rounded-md border p-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{lt.name} ({lt.code})</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={365}
+                        className="w-20 text-center"
+                        placeholder="Days"
+                        value={leaveAllocations[lt.id] ?? ''}
+                        onChange={(e) =>
+                          setLeaveAllocations((prev) => ({
+                            ...prev,
+                            [lt.id]: Math.max(0, parseInt(e.target.value) || 0),
+                          }))
+                        }
+                      />
+                      <span className="text-sm text-muted-foreground">days/year</span>
+                    </div>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           )}

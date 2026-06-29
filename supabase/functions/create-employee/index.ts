@@ -34,6 +34,7 @@ Deno.serve(async (req: Request) => {
       join_date,
       probation_end_date,
       current_salary,
+      leave_allocations = [],
     } = body
 
     // Validate required fields
@@ -197,19 +198,23 @@ Deno.serve(async (req: Request) => {
       await supabase.from('employee_onboarding_progress').insert(progressRows)
     }
 
-    // 8. Create leave_balances rows for current year for all active leave types
+    // 8. Create leave_balances rows for current year with owner-assigned allocations
     const currentYear = new Date().getFullYear()
     const { data: leaveTypes } = await supabase
       .from('leave_types')
-      .select('id')
+      .select('id, is_lwp')
       .eq('is_active', true)
 
     if (leaveTypes && leaveTypes.length > 0) {
+      const allocMap = new Map<string, number>(
+        (leave_allocations as { leave_type_id: string; days: number }[]).map((a) => [a.leave_type_id, a.days])
+      )
+
       const balanceRows = leaveTypes.map((lt) => ({
         employee_id: employee.id,
         leave_type_id: lt.id,
         year: currentYear,
-        opening_balance: 0,
+        opening_balance: lt.is_lwp ? 0 : (allocMap.get(lt.id) ?? 0),
         carry_forward_amount: 0,
         accrued: 0,
         taken: 0,

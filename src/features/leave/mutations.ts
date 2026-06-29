@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { callEdgeFunction } from '@/lib/edge'
 import type { SubmitLeaveResponse } from '@/types'
-import type { SubmitLeaveForm, ReviewLeaveForm, SubmitCompOffForm } from './schemas'
+import type { SubmitLeaveForm, ReviewLeaveForm } from './schemas'
 
 export function useSubmitLeave() {
   const qc = useQueryClient()
@@ -53,28 +53,6 @@ export function useConfirmLeaveCancellation() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['leave'] }),
   })
 }
-
-export function useSubmitCompOff() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (body: SubmitCompOffForm) =>
-      callEdgeFunction<SubmitCompOffForm, { request_id: string }>('submit-comp-off', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['leave'] }),
-  })
-}
-
-export function useReviewCompOff() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (body: { request_id: string; action: 'approve' | 'reject'; comment?: string }) =>
-      callEdgeFunction<object, { request_id: string; status: string; comp_off_expiry_date: string | null }>(
-        'review-comp-off',
-        body
-      ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['leave'] }),
-  })
-}
-
 export function useOptInHoliday() {
   const qc = useQueryClient()
   return useMutation({

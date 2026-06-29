@@ -22,6 +22,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { toast } from 'sonner'
 
 export function ApplyLeaveForm() {
@@ -34,6 +42,10 @@ export function ApplyLeaveForm() {
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
   const [attachmentPath, setAttachmentPath] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [monthlyLimitDialog, setMonthlyLimitDialog] = useState<{
+    formData: SubmitLeaveForm
+    monthlyConsumed: number
+  } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const {
@@ -95,17 +107,40 @@ export function ApplyLeaveForm() {
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  const onSubmit = async (data: SubmitLeaveForm) => {
+  const onSubmit = async (data: SubmitLeaveForm, monthlyExcessAction?: 'use_yearly_balance' | 'lwp') => {
     try {
-      const result = await submitLeave.mutateAsync({ ...data, attachment_path: attachmentPath })
+      const payload = { ...data, attachment_path: attachmentPath }
+      if (monthlyExcessAction) {
+        ;(payload as Record<string, unknown>).monthly_excess_action = monthlyExcessAction
+      }
+      const result = await submitLeave.mutateAsync(payload)
       toast.success(
         `Leave submitted (${result.working_days_count} working day${result.working_days_count !== 1 ? 's' : ''})`
       )
       navigate('/leave')
     } catch (e: unknown) {
-      const err = e as { message?: string }
+      const err = e as { code?: string; message?: string; details?: { monthly_consumed?: number; monthly_limit?: number } }
+      if (err?.code === 'MONTHLY_LIMIT_EXCEEDED') {
+        setMonthlyLimitDialog({
+          formData: data,
+          monthlyConsumed: err.details?.monthly_consumed ?? 0,
+        })
+        return
+      }
       toast.error(err?.message ?? 'Failed to submit leave')
     }
+  }
+
+  const handleYearlyBalance = () => {
+    if (!monthlyLimitDialog) return
+    onSubmit(monthlyLimitDialog.formData, 'use_yearly_balance')
+    setMonthlyLimitDialog(null)
+  }
+
+  const handleLwp = () => {
+    if (!monthlyLimitDialog) return
+    onSubmit(monthlyLimitDialog.formData, 'lwp')
+    setMonthlyLimitDialog(null)
   }
 
   if (typesLoading || balancesLoading) {
@@ -125,12 +160,13 @@ export function ApplyLeaveForm() {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Apply for Leave</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="leave_type_id">Leave Type</Label>
             <Select
@@ -270,5 +306,25 @@ export function ApplyLeaveForm() {
         </form>
       </CardContent>
     </Card>
+
+      <Dialog open={!!monthlyLimitDialog} onOpenChange={(open) => { if (!open) setMonthlyLimitDialog(null) }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Monthly Leave Limit Exceeded</DialogTitle>
+            <DialogDescription>
+              You can take a maximum of 2 paid leaves per month. You've already used {monthlyLimitDialog?.monthlyConsumed ?? 0} paid leave day(s) this month.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-center">
+            <Button variant="outline" onClick={handleYearlyBalance}>
+              Use Yearly Balance
+            </Button>
+            <Button onClick={handleLwp}>
+              Mark Excess as LWP
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

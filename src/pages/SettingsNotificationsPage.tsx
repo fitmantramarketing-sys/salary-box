@@ -14,7 +14,6 @@ type ConfigEntry = {
 
 const CONFIG_KEYS: ConfigEntry[] = [
   { key: 'regularization_window_days', value: '', description: 'Max calendar days in the past for regularization requests' },
-  { key: 'comp_off_expiry_days', value: '', description: 'Days after worked date before comp-off expires' },
   { key: 'leave_sla_business_days', value: '', description: 'Business days before pending leave is auto-escalated' },
   { key: 'optional_holiday_limit_per_year', value: '', description: 'Max optional holidays an employee can opt into per year' },
   { key: 'auto_checkout_time', value: '', description: 'IST time at which auto-checkout cron runs (HH:MM:SS)' },

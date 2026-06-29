@@ -291,6 +291,82 @@ export async function fetchRegularizationLog(
   return filtered
 }
 
+export type AbsenteeismRow = {
+  employeeId: string
+  employeeName: string
+  employeeCode: string
+  departmentName: string | null
+  absentDays: number
+  totalWorkDays: number
+  absenceRate: number
+}
+
+export async function fetchAbsenteeismData(
+  year: number,
+  month: number,
+  departmentId?: string
+): Promise<AbsenteeismRow[]> {
+  const { from, to } = monthBounds(year, month)
+
+  let empQuery = supabase
+    .from('employees')
+    .select('id, first_name, last_name, employee_code, department:departments!department_id(name)')
+    .eq('is_active', true)
+    .order('first_name')
+
+  if (departmentId) {
+    empQuery = empQuery.eq('department_id', departmentId)
+  }
+
+  const [empRes, attRes] = await Promise.all([
+    empQuery,
+    supabase
+      .from('attendance_records')
+      .select('employee_id, status')
+      .gte('date', from)
+      .lte('date', to),
+  ])
+
+  if (empRes.error) throw empRes.error
+  if (attRes.error) throw attRes.error
+
+  const employees = empRes.data ?? []
+  const records = attRes.data ?? []
+
+  const lastDay = new Date(year, month, 0).getDate()
+  let workdayCount = 0
+  for (let d = 1; d <= lastDay; d++) {
+    const dow = new Date(year, month - 1, d).getDay()
+    if (dow !== 0) workdayCount++
+  }
+
+  const recordMap = new Map<string, { absent: number }>()
+  for (const r of records) {
+    if (r.status === 'absent') {
+      const entry = recordMap.get(r.employee_id) ?? { absent: 0 }
+      entry.absent++
+      recordMap.set(r.employee_id, entry)
+    }
+  }
+
+  return employees
+    .map((emp) => {
+      const dept = emp.department as { name: string } | null
+      const stats = recordMap.get(emp.id) ?? { absent: 0 }
+      return {
+        employeeId: emp.id,
+        employeeName: `${emp.first_name} ${emp.last_name}`,
+        employeeCode: emp.employee_code,
+        departmentName: dept?.name ?? null,
+        absentDays: stats.absent,
+        totalWorkDays: workdayCount,
+        absenceRate: workdayCount > 0 ? Math.round((stats.absent / workdayCount) * 100) : 0,
+      }
+    })
+    .filter((r) => r.absentDays > 0)
+    .sort((a, b) => b.absenceRate - a.absenceRate)
+}
+
 export async function fetchSelfAttendance(
   employeeId: string,
   year: number,

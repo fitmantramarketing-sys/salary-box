@@ -21,12 +21,14 @@ If a rule isn't in your current context, read the relevant doc above before
 inventing an answer.
 
 ## Current status — UPDATE THIS EVERY SESSION
-Last updated: 2026-06-27
+Last updated: 2026-06-29
 Active branch: experiment-new-agent
-Current session: Resend transactional email configured + 17 EFs updated with email
-notifications alongside in-app notifications. Attendance business rules overhaul also
-completed — grace period removed, half-day at 10:21, early checkout reason + approval
-flow, overtime removed entirely, auto-checkout shift-aware (end+buffer), no-checkout → absent.
+Current session: Resend SMTP configured + site_url updated to production. Password
+reset emails now go through Resend (noreply@hr.fitmantra.co.in) and link to
+https://salary-box-sigma.vercel.app. Verified end-to-end: Resend API + password
+reset via Supabase Auth SMTP both confirmed working (tested with non-scet.ac.in
+email). Remaining: fix migration naming conflict, re-seed reference data,
+reconcile origin/main, deploy frontend to Vercel.
 
 ### M2 — Complete Feature Set
 - **M2-1 CSV Export:** "Download CSV" button on EmployeesPage header
@@ -204,6 +206,16 @@ flow, overtime removed entirely, auto-checkout shift-aware (end+buffer), no-chec
 | `probation-end-alert` | Owner | Probation ending in 14 days |
 | `access-revocation` | HR/Owner | Employee access revoked |
 
+### This session — Final Polish: Leave Balance UI, Year-End Reset, Absenteeism, Cleanup
+- **4 stale cron functions unscheduled**: `monthly-leave-accrual`, `year-end-leave-rollover`, `carry-forward-expiry-alert`, `carry-forward-lapse` — all removed from `cron.job` via Management API SQL. Migration `0018_unschedule_stale_cron_functions.sql` created for version control.
+- **HR Leave Balance Edit Page** (`/settings/leave-balances`): New settings page for owner/hr to view all employees' leave balances in a table with inline-editable `opening_balance` and `adjusted` columns per leave type. Features scrollable table, loading/empty/error states, and "Year-End Reset" button (owner-only with confirmation dialog).
+- **Year-End Reset EF** (`supabase/functions/year-end-reset/`): Manual-trigger Edge Function that carries forward remaining balances (`opening + adjusted - taken - pending`) for each employee × leave type pair into the next year's `opening_balance`. Resets taken/pending/adjusted/accrued to 0. Idempotent via `onConflict: 'employee_id, leave_type_id, year'`. Returns `{ created, year }`.
+- **Absenteeism tab** on `ReportsAttendancePage`: Tab-switcher view showing employees sorted by absence rate, color-coded (green <10%, yellow 10-25%, red >25%) with CSV export.
+- **Employee leave self-view** on `ReportsLeavePage`: Employees now see "My Leave Balances" summary cards instead of full report; owner/hr see existing LeaveBalanceReport.
+- **Migration naming conflict fixed**: Deleted superseded `0010_fix_employee_self_update_is_first_login.sql` (only `0010_fix_enforce_employee_update_service_role` was applied remotely). All 18 migrations (0001–0018) registered in `supabase_migrations.schema_migrations`.
+- **DB types regenerated**: Clean without `node.exe` warning.
+- **TypeScript clean**: `tsc --noEmit` passes with zero errors.
+
 ### This session — Attendance Business Rules Overhaul
 - **Grace period removed**: Any check-in after 10:00 is late (was 20min grace).
 - **Half-day deadline**: Check-in ≥10:21 → `half_day` status (was based on hours worked).
@@ -227,14 +239,9 @@ flow, overtime removed entirely, auto-checkout shift-aware (end+buffer), no-chec
 - **Typecheck + lint clean**: `database.types.ts` regenerated via `supabase gen types`.
 
 ### Remaining items
-1. Fix migration naming conflict (`0010_*` duplication) — run `supabase migration repair`
-2. Re-seed `departments`, `designations`, `shifts` reference data via UI
-3. Additional pages: absenteeism tab on ReportsAttendancePage (S-24),
-   employee leave self-view on ReportsLeavePage (S-30)
-
-### SMTP Configuration (still needed)
-- Configure Resend SMTP in Supabase Dashboard → Authentication → Settings → SMTP for password reset emails:
-  - Host: `smtp.resend.com`, Port: `587`, Username/Password: `RESEND_API_KEY`, Sender: `HR Tool <noreply@hr.fitmantra.co.in>`
+1. Re-seed `departments`, `designations`, `shifts` reference data via UI
+2. Reconcile `origin/main` with local scaffold state (it reverted to pre-scaffold on GitHub)
+3. Deploy frontend to Vercel (if not already deployed)
 
 ### Edge Functions Deployed (cumulative)
 - M1/M2: `add-lifecycle-event`, `upload-document`, `generate-presigned-url`,
@@ -259,6 +266,7 @@ flow, overtime removed entirely, auto-checkout shift-aware (end+buffer), no-chec
 - Migration naming conflict: two `0010_*` files — run `supabase migration repair`
 - All `departments`, `designations`, `shifts` rows hard deleted — re-seed via UI
 - Resend SMTP still needs to be configured in Supabase Dashboard Auth settings for password reset emails
+- Frontend may need to be re-deployed to Vercel for latest changes to be live
 
 ## Supabase project access (for agents)
 This repo has a project-scoped Supabase MCP server configured in `.mcp.json`,

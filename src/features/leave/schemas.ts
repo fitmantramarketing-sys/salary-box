@@ -18,9 +18,3 @@ export const reviewLeaveSchema = z.object({
 })
 export type ReviewLeaveForm = z.infer<typeof reviewLeaveSchema>
 
-export const submitCompOffSchema = z.object({
-  worked_date: z.string().min(1, 'Worked date is required'),
-  hours_worked: z.number().min(1).max(24),
-  reason: z.string().min(5, 'Please provide a reason'),
-})
-export type SubmitCompOffForm = z.infer<typeof submitCompOffSchema>

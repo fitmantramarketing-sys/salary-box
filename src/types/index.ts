@@ -21,7 +21,6 @@ export type DepartmentShift = Database['public']['Tables']['department_shifts'][
 export type EmployeeShiftOverride = Database['public']['Tables']['employee_shift_overrides']['Row']
 export type RegularizationRequest = Database['public']['Tables']['attendance_regularization_requests']['Row']
 export type Holiday = Database['public']['Tables']['holidays']['Row']
-export type CompOffRequest = Database['public']['Tables']['comp_off_requests']['Row']
 
 // ─── Role ─────────────────────────────────────────────────────────────────────
 export type Role = Employee['role']

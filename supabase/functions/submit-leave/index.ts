@@ -20,6 +20,7 @@ Deno.serve(async (req: Request) => {
       half_day_period = null,
       reason,
       attachment_path = null,
+      monthly_excess_action,
     } = await req.json()
 
     if (!leave_type_id || !from_date || !to_date || !reason) {
@@ -86,6 +87,53 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Monthly paid leave cap (max 2 combined per month for non-LWP types)
+    if (!leaveType.is_lwp) {
+      const { data: paidTypes } = await supabase
+        .from('leave_types')
+        .select('id')
+        .eq('is_lwp', false)
+        .eq('is_active', true)
+
+      const paidTypeIds = (paidTypes ?? []).map((t) => t.id)
+
+      if (paidTypeIds.length > 0) {
+        const fromMonthStart = from_date.substring(0, 7) + '-01'
+        const fromMonthEnd = from_date.substring(0, 7) + '-31'
+
+        const { data: monthLeaves } = await supabase
+          .from('leave_applications')
+          .select('working_days_count')
+          .eq('employee_id', actor.actorId)
+          .in('status', ['pending', 'approved'])
+          .in('leave_type_id', paidTypeIds)
+          .gte('from_date', fromMonthStart)
+          .lte('from_date', fromMonthEnd)
+
+        const monthlyConsumed = (monthLeaves ?? []).reduce(
+          (sum, l) => sum + (l.working_days_count ?? 0), 0
+        )
+
+        const totalIfSubmitted = monthlyConsumed + workingDays
+
+        if (totalIfSubmitted > 2) {
+          if (monthly_excess_action === 'use_yearly_balance') {
+            // Allow — yearly balance check will handle it below
+          } else if (monthly_excess_action === 'lwp') {
+            return err('VALIDATION_ERROR',
+              'Monthly paid leave limit exceeded. Please submit the excess days as a separate Leave Without Pay application.'
+            )
+          } else {
+            return err('MONTHLY_LIMIT_EXCEEDED',
+              `Monthly paid leave limit would be exceeded (already used ${monthlyConsumed} day(s) this month).`,
+              400,
+              { monthly_consumed: monthlyConsumed, monthly_limit: 2 }
+            )
+          }
+        }
+      }
+    }
+
     const { data: overlap, error: ovErr } = await supabase
       .from('leave_applications')
       .select('id, status')
@@ -113,7 +161,7 @@ Deno.serve(async (req: Request) => {
     if (balErr) throw balErr
 
     const available = balance
-      ? (balance.opening_balance + balance.accrued + balance.adjusted) - balance.taken - balance.pending
+      ? (balance.opening_balance + balance.adjusted) - balance.taken - balance.pending
       : 0
 
     if (workingDays > available) {

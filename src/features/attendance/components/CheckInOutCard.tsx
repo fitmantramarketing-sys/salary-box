@@ -54,7 +54,6 @@ export function CheckInOutCard() {
 
   const handleCheckOutConfirm = async () => {
     try {
-      setEarlyCheckoutOpen(false)
       const coords = await getCurrentPosition()
       const body: Record<string, unknown> = {}
       if (coords) {
@@ -65,6 +64,7 @@ export function CheckInOutCard() {
         body.early_checkout_reason = earlyCheckoutReason.trim()
       }
       const result = await checkOut.mutateAsync(body)
+      setEarlyCheckoutOpen(false)
       toast.success(`Checked out. Total: ${formatHours(result.total_hours)}`)
       refetch()
     } catch (e: unknown) {

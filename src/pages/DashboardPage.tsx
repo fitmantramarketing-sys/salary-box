@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useRole } from '@/hooks/useRole'
@@ -9,6 +10,15 @@ import { Button } from '@/components/ui/button'
 import { Loader2, Users, Clock, Calendar, CheckCircle2, AlertTriangle, ArrowRight, Home } from 'lucide-react'
 import { useCheckIn, useCheckOut, useLogWFH } from '@/features/attendance/mutations'
 import { getCurrentPosition } from '@/features/attendance/utils'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 
 async function fetchDashboardCounts() {
@@ -173,6 +183,9 @@ function EmployeeDashboardView() {
   const checkOut = useCheckOut()
   const logWFH = useLogWFH()
 
+  const [earlyCheckoutOpen, setEarlyCheckoutOpen] = useState(false)
+  const [earlyCheckoutReason, setEarlyCheckoutReason] = useState('')
+
   const handleCheckIn = async () => {
     try {
       const coords = await getCurrentPosition()
@@ -185,10 +198,24 @@ function EmployeeDashboardView() {
     }
   }
 
-  const handleCheckOut = async () => {
+  const handleCheckOutClick = () => {
+    setEarlyCheckoutReason('')
+    setEarlyCheckoutOpen(true)
+  }
+
+  const handleCheckOutConfirm = async () => {
     try {
       const coords = await getCurrentPosition()
-      const result = await checkOut.mutateAsync(coords ?? {})
+      const body: Record<string, unknown> = {}
+      if (coords) {
+        body.latitude = coords.latitude
+        body.longitude = coords.longitude
+      }
+      if (earlyCheckoutReason.trim()) {
+        body.early_checkout_reason = earlyCheckoutReason.trim()
+      }
+      const result = await checkOut.mutateAsync(body)
+      setEarlyCheckoutOpen(false)
       toast.success(`Checked out. Total: ${result.total_hours}h`)
       refetch()
     } catch (e: unknown) {
@@ -248,7 +275,7 @@ function EmployeeDashboardView() {
             size="lg"
             variant="outline"
             disabled={!checkedIn || checkedOut || checkOut.isPending}
-            onClick={handleCheckOut}
+            onClick={handleCheckOutClick}
           >
             {checkOut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
             Check Out
@@ -307,6 +334,28 @@ function EmployeeDashboardView() {
           </CardContent>
         </Card>
       )}
+
+      {/* Early checkout dialog */}
+      <Dialog open={earlyCheckoutOpen} onOpenChange={setEarlyCheckoutOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Early Checkout</DialogTitle>
+            <DialogDescription>
+              You are checking out before the shift ends. Please provide a reason.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Reason for early checkout..."
+            value={earlyCheckoutReason}
+            onChange={(e) => setEarlyCheckoutReason(e.target.value)}
+            rows={3}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEarlyCheckoutOpen(false)}>Cancel</Button>
+            <Button onClick={handleCheckOutConfirm}>Confirm Checkout</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

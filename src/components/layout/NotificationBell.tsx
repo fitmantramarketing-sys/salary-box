@@ -39,8 +39,6 @@ export function NotificationBell() {
         ? `/leave/applications/${notification.reference_id}`
         : notification.reference_table === 'attendance_records'
         ? `/attendance`
-        : notification.reference_table === 'comp_off_requests'
-        ? `/leave/comp-off/request`
         : null
       if (path) navigate(path)
     }

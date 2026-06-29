@@ -7,7 +7,6 @@ import {
   fetchPendingLeaveApplications,
   fetchCancellationRequests,
   fetchLeaveApplication,
-  fetchCompOffRequests,
   fetchHolidays,
   fetchMyOptionalHolidays,
 } from './api'
@@ -58,14 +57,6 @@ export function useLeaveApplication(id: string) {
     enabled: !!id,
   })
 }
-
-export function useCompOffRequests(employeeId?: string) {
-  return useQuery({
-    queryKey: ['leave', 'comp-off', employeeId],
-    queryFn: () => fetchCompOffRequests(employeeId),
-  })
-}
-
 export function useHolidays(year?: number) {
   return useQuery({
     queryKey: ['leave', 'holidays', year],
