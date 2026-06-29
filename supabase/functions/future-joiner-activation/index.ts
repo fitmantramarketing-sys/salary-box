@@ -1,5 +1,6 @@
 import { getServiceClient } from '../_shared/supabase.ts'
 import { ok, cors, handleError } from '../_shared/response.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 // Cron: daily at 00:01 IST (BR-EMP-03)
 Deno.serve(async (req: Request) => {
@@ -11,7 +12,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: employees, error: fetchError } = await supabase
       .from('employees')
-      .select('id, first_name, last_name, employee_code, is_first_login')
+      .select('id, first_name, last_name, employee_code, email, is_first_login')
       .eq('employment_status', 'future_joiner')
       .eq('join_date', today)
 
@@ -33,6 +34,25 @@ Deno.serve(async (req: Request) => {
       if (updateError) {
         errors.push(`${emp.employee_code}: ${updateError.message}`)
         continue
+      }
+
+      // Send welcome email
+      try {
+        await sendEmail({
+          to: emp.email,
+          subject: 'Welcome to the company — your account is active',
+          html: `
+            <h2>Welcome, ${emp.first_name}!</h2>
+            <p>Your employment starts today. Your account is now active.</p>
+            <p><strong>Employee Code:</strong> ${emp.employee_code}</p>
+            <p><strong>Email:</strong> ${emp.email}</p>
+            <p>Please log in at the company HR portal to get started.</p>
+            <hr />
+            <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+          `,
+        })
+      } catch (emailErr) {
+        console.error(`Welcome email failed for ${emp.employee_code}:`, emailErr)
       }
 
       // Create in-app notification for Owner and HR

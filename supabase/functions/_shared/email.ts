@@ -4,7 +4,7 @@ export async function sendEmail({
   to,
   subject,
   html,
-  from = 'HR Tool <noreply@hr.example.com>',
+  from = 'HR Tool <noreply@hr.fitmantra.co.in>',
 }: {
   to: string
   subject: string

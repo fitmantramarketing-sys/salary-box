@@ -2,6 +2,7 @@ import { getActor, assertRole } from '../_shared/auth.ts'
 import { ok, cors, handleError, err } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { createNotification } from '../_shared/notify.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -27,6 +28,12 @@ Deno.serve(async (req: Request) => {
     if (appErr || !app) {
       return err('NOT_FOUND', 'Leave application not found')
     }
+
+    const { data: employee } = await supabase
+      .from('employees')
+      .select('email')
+      .eq('id', app.employee_id)
+      .single()
 
     if (!app.cancellation_requested) {
       return err('NOT_FOUND', 'No pending cancellation request for this application')
@@ -87,6 +94,23 @@ Deno.serve(async (req: Request) => {
         referenceTable: 'leave_applications',
       })
 
+      try {
+        await sendEmail({
+          to: employee.email,
+          subject: 'Leave Cancellation Confirmed',
+          html: `
+            <h2>Leave Cancellation Confirmed</h2>
+            <p>Your leave cancellation request has been confirmed.</p>
+            <p><strong>Leave Dates:</strong> ${app.from_date} to ${app.to_date}</p>
+            ${comment ? `<p><strong>Note:</strong> ${comment}</p>` : ''}
+            <hr />
+            <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+          `,
+        })
+      } catch (emailErr) {
+        console.error('Cancellation confirmed email failed:', emailErr)
+      }
+
       return ok({ application_id, status: 'cancelled' })
     } else {
       await supabase
@@ -105,6 +129,23 @@ Deno.serve(async (req: Request) => {
         referenceId: application_id,
         referenceTable: 'leave_applications',
       })
+
+      try {
+        await sendEmail({
+          to: employee.email,
+          subject: 'Leave Cancellation Rejected',
+          html: `
+            <h2>Leave Cancellation Rejected</h2>
+            <p>Your leave cancellation request was not approved.</p>
+            <p><strong>Leave Dates:</strong> ${app.from_date} to ${app.to_date}</p>
+            ${comment ? `<p><strong>Reason:</strong> ${comment}</p>` : ''}
+            <hr />
+            <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+          `,
+        })
+      } catch (emailErr) {
+        console.error('Cancellation rejected email failed:', emailErr)
+      }
 
       return ok({ application_id, status: 'approved' })
     }

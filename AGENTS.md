@@ -23,9 +23,10 @@ inventing an answer.
 ## Current status — UPDATE THIS EVERY SESSION
 Last updated: 2026-06-27
 Active branch: experiment-new-agent
-Current session: Attendance business rules overhaul — grace period removed, half-day
-at 10:21, early checkout reason + approval flow, overtime removed entirely, auto-checkout
-shift-aware (end+buffer), no-checkout → absent.
+Current session: Resend transactional email configured + 17 EFs updated with email
+notifications alongside in-app notifications. Attendance business rules overhaul also
+completed — grace period removed, half-day at 10:21, early checkout reason + approval
+flow, overtime removed entirely, auto-checkout shift-aware (end+buffer), no-checkout → absent.
 
 ### M2 — Complete Feature Set
 - **M2-1 CSV Export:** "Download CSV" button on EmployeesPage header
@@ -176,6 +177,33 @@ shift-aware (end+buffer), no-checkout → absent.
   `weekly_off_days` and mark Sundays as `weekly_off` (gray) instead of hiding them
   or showing as absent. Applied to employee calendar, team grid, and self-report.
 
+### This session — Resend Transactional Email Configuration
+- **RESEND_API_KEY stored** in Supabase project secrets — `sendEmail` now works across all EFs
+- **`_shared/email.ts`** — default `from` address updated to `noreply@hr.fitmantra.co.in`
+- **Password reset**: Configure Resend SMTP in Supabase Dashboard → Auth → Settings → SMTP (host: `smtp.resend.com`, port: `587`, credentials = API key)
+- **17 EFs updated + deployed** with transactional email alongside in-app notifications:
+
+| EF | Who gets emailed | Trigger |
+|---|---|---|
+| `future-joiner-activation` | Employee | Welcome on activation day |
+| `create-employee` | Employee | Welcome with temp password (was already built) |
+| `review-leave` | Employee | Approve/reject notification |
+| `review-regularization` | Employee | Approve/reject notification |
+| `review-comp-off` | Employee | Approve/reject notification |
+| `confirm-leave-cancellation` | Employee | Cancellation confirmed/rejected |
+| `auto-checkout` | Employee | Auto-checkout with regularization prompt |
+| `incomplete-attendance-reminder` | Employee | Yesterday's attendance incomplete |
+| `late-mark-deduction` | Employee | 0.5 day deducted from leave balance |
+| `submit-regularization` | HR/Owner | New regularization request |
+| `submit-leave` | HR/Owner | New leave application |
+| `request-leave-cancellation` | HR/Owner | Cancellation requested |
+| `carry-forward-expiry-alert` | Employee | 30/7 day expiry warning |
+| `comp-off-expiry-alert` | Employee | 7 day expiry warning |
+| `leave-sla-escalation` | Owner | SLA breached on pending leave |
+| `exit-date-alert` | HR/Owner/Admin | Exit date in 7 days |
+| `probation-end-alert` | Owner | Probation ending in 14 days |
+| `access-revocation` | HR/Owner | Employee access revoked |
+
 ### This session — Attendance Business Rules Overhaul
 - **Grace period removed**: Any check-in after 10:00 is late (was 20min grace).
 - **Half-day deadline**: Check-in ≥10:21 → `half_day` status (was based on hours worked).
@@ -199,11 +227,14 @@ shift-aware (end+buffer), no-checkout → absent.
 - **Typecheck + lint clean**: `database.types.ts` regenerated via `supabase gen types`.
 
 ### Remaining items
-1. Configure `RESEND_API_KEY` in Supabase project secrets for transactional emails
-2. Fix migration naming conflict (`0010_*` duplication) — run `supabase migration repair`
-3. Re-seed `departments`, `designations`, `shifts` reference data via UI
-4. Additional pages: absenteeism tab on ReportsAttendancePage (S-24),
+1. Fix migration naming conflict (`0010_*` duplication) — run `supabase migration repair`
+2. Re-seed `departments`, `designations`, `shifts` reference data via UI
+3. Additional pages: absenteeism tab on ReportsAttendancePage (S-24),
    employee leave self-view on ReportsLeavePage (S-30)
+
+### SMTP Configuration (still needed)
+- Configure Resend SMTP in Supabase Dashboard → Authentication → Settings → SMTP for password reset emails:
+  - Host: `smtp.resend.com`, Port: `587`, Username/Password: `RESEND_API_KEY`, Sender: `HR Tool <noreply@hr.fitmantra.co.in>`
 
 ### Edge Functions Deployed (cumulative)
 - M1/M2: `add-lifecycle-event`, `upload-document`, `generate-presigned-url`,
@@ -224,10 +255,10 @@ shift-aware (end+buffer), no-checkout → absent.
 
 ### Known issues
 - `origin/main` on GitHub reverted to pre-scaffold state — local branches correct
-- RESEND_API_KEY not configured → welcome email silently fails
 - Auth setting `mailer_allow_unverified_email_sign_ins = true` required
 - Migration naming conflict: two `0010_*` files — run `supabase migration repair`
 - All `departments`, `designations`, `shifts` rows hard deleted — re-seed via UI
+- Resend SMTP still needs to be configured in Supabase Dashboard Auth settings for password reset emails
 
 ## Supabase project access (for agents)
 This repo has a project-scoped Supabase MCP server configured in `.mcp.json`,

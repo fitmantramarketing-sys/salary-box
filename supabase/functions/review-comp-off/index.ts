@@ -2,6 +2,7 @@ import { getActor, assertRole } from '../_shared/auth.ts'
 import { ok, cors, handleError, err } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { createNotification } from '../_shared/notify.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -138,6 +139,23 @@ Deno.serve(async (req: Request) => {
         referenceTable: 'comp_off_requests',
       })
 
+      try {
+        const empEmail = (request.employees as unknown as { email: string }).email
+        await sendEmail({
+          to: empEmail,
+          subject: 'Comp-Off Approved',
+          html: `
+            <h2>Comp-Off Approved</h2>
+            <p>Your comp-off request for <strong>${request.worked_date}</strong> has been approved.</p>
+            <p>Expires on <strong>${compOffExpiryDate}</strong>. Please use it before it lapses.</p>
+            <hr />
+            <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+          `,
+        })
+      } catch (emailErr) {
+        console.error('Comp-off approved email failed:', emailErr)
+      }
+
       return ok({
         request_id,
         status: 'approved',
@@ -152,6 +170,23 @@ Deno.serve(async (req: Request) => {
         referenceId: request_id,
         referenceTable: 'comp_off_requests',
       })
+
+      try {
+        const empEmail = (request.employees as unknown as { email: string }).email
+        await sendEmail({
+          to: empEmail,
+          subject: 'Comp-Off Rejected',
+          html: `
+            <h2>Comp-Off Rejected</h2>
+            <p>Your comp-off request for <strong>${request.worked_date}</strong> has been rejected.</p>
+            ${comment ? `<p><strong>Reviewer Note:</strong> ${comment}</p>` : ''}
+            <hr />
+            <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+          `,
+        })
+      } catch (emailErr) {
+        console.error('Comp-off rejected email failed:', emailErr)
+      }
 
       return ok({ request_id, status: 'rejected', comp_off_expiry_date: null })
     }

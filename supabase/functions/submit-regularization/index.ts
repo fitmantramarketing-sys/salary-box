@@ -2,6 +2,7 @@ import { getActor, assertRole } from '../_shared/auth.ts'
 import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { createNotification } from '../_shared/notify.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -84,7 +85,7 @@ Deno.serve(async (req: Request) => {
     // Notify all Owner and HR employees
     const { data: admins } = await supabase
       .from('employees')
-      .select('id')
+      .select('id, email')
       .in('role', ['owner', 'hr'])
       .eq('is_active', true)
 
@@ -98,6 +99,22 @@ Deno.serve(async (req: Request) => {
           referenceId: request.id,
           referenceTable: 'attendance_regularization_requests',
         })
+      }
+      try {
+        await sendEmail({
+          to: admins.map((a) => a.email).join(','),
+          subject: 'Regularization Request',
+          html: `
+            <h2>Regularization Request</h2>
+            <p>An employee has requested regularization for <strong>${record.date}</strong>.</p>
+            <p><strong>Reason:</strong> ${reason}</p>
+            <p>Please review the request in the HR portal.</p>
+            <hr />
+            <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+          `,
+        })
+      } catch (emailErr) {
+        console.error('Regularization submission email failed:', emailErr)
       }
     }
 

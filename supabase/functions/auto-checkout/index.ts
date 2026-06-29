@@ -2,6 +2,7 @@ import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { resolveShift } from '../_shared/shift.ts'
 import { createNotification } from '../_shared/notify.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -20,7 +21,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: incomplete } = await supabase
       .from('attendance_records')
-      .select('id, employee_id')
+      .select('id, employee_id, employees!attendance_records_employee_id_fkey(email)')
       .eq('date', today)
       .not('check_in_time', 'is', null)
       .is('check_out_time', null)
@@ -51,6 +52,7 @@ Deno.serve(async (req: Request) => {
 
         if (!updateError) {
           processed++
+          const empEmail = (record.employees as unknown as { email: string }).email
           await createNotification({
             recipientId: record.employee_id,
             title: 'Attendance Incomplete',
@@ -59,6 +61,21 @@ Deno.serve(async (req: Request) => {
             referenceId: record.id,
             referenceTable: 'attendance_records',
           })
+          try {
+            await sendEmail({
+              to: empEmail,
+              subject: 'Attendance Auto-Checked Out',
+              html: `
+                <h2>Attendance Auto-Checked Out</h2>
+                <p>Your attendance for <strong>${today}</strong> was auto-checked out as you did not check out on time.</p>
+                <p>Your status has been marked as <strong>absent</strong>. Please submit a regularization request if you were present.</p>
+                <hr />
+                <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+              `,
+            })
+          } catch (emailErr) {
+            console.error(`Auto-checkout email failed for ${record.employee_id}:`, emailErr)
+          }
         }
       } catch {
         continue

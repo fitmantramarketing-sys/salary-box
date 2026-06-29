@@ -2,6 +2,7 @@ import { getActor, assertRole } from '../_shared/auth.ts'
 import { ok, cors, handleError, err } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { createNotification } from '../_shared/notify.ts'
+import { sendEmail } from '../_shared/email.ts'
 import { countWorkingDays } from '../_shared/working-days.ts'
 
 Deno.serve(async (req: Request) => {
@@ -35,7 +36,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: employee } = await supabase
       .from('employees')
-      .select('id')
+      .select('id, email')
       .eq('id', app.employee_id)
       .single()
 
@@ -124,6 +125,25 @@ Deno.serve(async (req: Request) => {
         referenceTable: 'leave_applications',
       })
 
+      try {
+        await sendEmail({
+          to: employee.email,
+          subject: 'Leave Approved',
+          html: `
+            <h2>Leave Approved</h2>
+            <p>Your leave request has been approved.</p>
+            <p><strong>Reason:</strong> ${app.reason}</p>
+            <p><strong>Dates:</strong> ${app.from_date} to ${app.to_date}</p>
+            <p><strong>Working Days:</strong> ${app.working_days_count}</p>
+            ${comment ? `<p><strong>Reviewer Note:</strong> ${comment}</p>` : ''}
+            <hr />
+            <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+          `,
+        })
+      } catch (emailErr) {
+        console.error('Leave approved email failed:', emailErr)
+      }
+
       return ok({ application_id, status: 'approved' })
     } else {
       await supabase
@@ -159,6 +179,24 @@ Deno.serve(async (req: Request) => {
         referenceId: application_id,
         referenceTable: 'leave_applications',
       })
+
+      try {
+        await sendEmail({
+          to: employee.email,
+          subject: 'Leave Rejected',
+          html: `
+            <h2>Leave Rejected</h2>
+            <p>Your leave request has been rejected.</p>
+            <p><strong>Reason:</strong> ${app.reason}</p>
+            <p><strong>Dates:</strong> ${app.from_date} to ${app.to_date}</p>
+            ${comment ? `<p><strong>Reviewer Note:</strong> ${comment}</p>` : ''}
+            <hr />
+            <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+          `,
+        })
+      } catch (emailErr) {
+        console.error('Leave rejected email failed:', emailErr)
+      }
 
       return ok({ application_id, status: 'rejected' })
     }

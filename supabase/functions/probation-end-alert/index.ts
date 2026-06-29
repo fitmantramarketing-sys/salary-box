@@ -1,5 +1,6 @@
 import { getServiceClient } from '../_shared/supabase.ts'
 import { ok, cors, handleError } from '../_shared/response.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -25,11 +26,12 @@ Deno.serve(async (req: Request) => {
 
     const { data: owners } = await supabase
       .from('employees')
-      .select('id')
+      .select('id, email')
       .eq('role', 'owner')
       .eq('is_active', true)
 
     const ownerIds = owners?.map((o) => o.id) ?? []
+    const ownerEmails = owners?.map((o) => o.email).filter(Boolean) ?? []
     let processed = 0
 
     for (const emp of employees) {
@@ -45,6 +47,24 @@ Deno.serve(async (req: Request) => {
         const { error: notifError } = await supabase.from('notifications').insert(notifications)
         if (notifError) {
           console.error('Failed to create notifications:', notifError)
+        }
+      }
+
+      if (ownerEmails.length > 0) {
+        try {
+          await sendEmail({
+            to: ownerEmails.join(','),
+            subject: 'Probation Period Ending Soon',
+            html: `
+              <h2>Probation Period Ending Soon</h2>
+              <p><strong>${emp.first_name} ${emp.last_name}</strong> (${emp.employee_code}) probation ends in 14 days.</p>
+              <p>Please review their performance and confirm or extend the probation.</p>
+              <hr />
+              <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+            `,
+          })
+        } catch (emailErr) {
+          console.error(`Probation end alert email failed for ${emp.employee_code}:`, emailErr)
         }
       }
 

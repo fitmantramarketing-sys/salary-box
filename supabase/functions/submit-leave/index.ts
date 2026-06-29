@@ -3,6 +3,7 @@ import { ok, cors, handleError, err } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { countWorkingDays } from '../_shared/working-days.ts'
 import { createNotification } from '../_shared/notify.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -180,7 +181,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: approvers } = await supabase
       .from('employees')
-      .select('id')
+      .select('id, email')
       .in('role', ['owner', 'hr'])
       .eq('is_active', true)
 
@@ -197,6 +198,27 @@ Deno.serve(async (req: Request) => {
         referenceId: application.id,
         referenceTable: 'leave_applications',
       })
+    }
+
+    try {
+      const targetEmails = notifyTargets.map((a) => a.email).filter(Boolean).join(',')
+      if (targetEmails) {
+        await sendEmail({
+          to: targetEmails,
+          subject: 'Leave Application Submitted',
+          html: `
+            <h2>Leave Application Submitted</h2>
+            <p><strong>Reason:</strong> ${reason}</p>
+            <p><strong>Dates:</strong> ${from_date} to ${to_date}</p>
+            <p><strong>Working Days:</strong> ${workingDays}${escalatedTo ? '<br/><em>Escalated to Owner (manager on leave)</em>' : ''}</p>
+            <p>Please review the application in the HR portal.</p>
+            <hr />
+            <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+          `,
+        })
+      }
+    } catch (emailErr) {
+      console.error('Leave submission email failed:', emailErr)
     }
 
     return ok({

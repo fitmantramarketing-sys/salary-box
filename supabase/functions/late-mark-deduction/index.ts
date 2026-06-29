@@ -1,5 +1,7 @@
 import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
+import { createNotification } from '../_shared/notify.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -15,7 +17,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: employees } = await supabase
       .from('employees')
-      .select('id')
+      .select('id, email')
       .eq('is_active', true)
 
     if (!employees || employees.length === 0) {
@@ -85,6 +87,7 @@ Deno.serve(async (req: Request) => {
       if (lateRecord.length < threshold) continue
 
       // Deduct 0.5 from leave balance — CL first, then EL, then LWP
+      let deducted = false
       for (const lt of deductionPriority) {
         if (!lt) continue
         const { data: balance } = await supabase
@@ -110,9 +113,39 @@ Deno.serve(async (req: Request) => {
           .eq('id', balance.id)
 
         if (!error) {
+          await createNotification({
+            recipientId: emp.id,
+            title: 'Late Mark Deduction',
+            body: `0.5 day deducted from your ${lt.code} balance due to ${lateRecord.length} late marks this month.`,
+            type: 'late_mark_deduction',
+          })
+          try {
+            await sendEmail({
+              to: emp.email,
+              subject: 'Late Mark Deduction Applied',
+              html: `
+                <h2>Late Mark Deduction</h2>
+                <p>You had <strong>${lateRecord.length} late marks</strong> last month.</p>
+                <p><strong>0.5 day</strong> has been deducted from your <strong>${lt.code}</strong> balance.</p>
+                <hr />
+                <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+              `,
+            })
+          } catch (emailErr) {
+            console.error(`Late deduction email failed for ${emp.id}:`, emailErr)
+          }
+          deducted = true
           processed++
           break
         }
+      }
+      if (!deducted) {
+        await createNotification({
+          recipientId: emp.id,
+          title: 'Late Mark Warning',
+          body: `You had ${lateRecord.length} late marks last month but no leave balance available for deduction.`,
+          type: 'late_mark_warning',
+        })
       }
     }
 

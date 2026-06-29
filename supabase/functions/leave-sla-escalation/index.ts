@@ -1,6 +1,7 @@
 import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { createNotification } from '../_shared/notify.ts'
+import { sendEmail } from '../_shared/email.ts'
 import { countWorkingDays } from '../_shared/working-days.ts'
 
 Deno.serve(async (req: Request) => {
@@ -19,7 +20,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: owner } = await supabase
       .from('employees')
-      .select('id')
+      .select('id, email')
       .eq('role', 'owner')
       .eq('is_active', true)
       .maybeSingle()
@@ -63,6 +64,22 @@ Deno.serve(async (req: Request) => {
           referenceId: app.id,
           referenceTable: 'leave_applications',
         })
+
+        try {
+          await sendEmail({
+            to: owner.email,
+            subject: 'Leave SLA Breached',
+            html: `
+              <h2>Leave SLA Breached</h2>
+              <p>A leave request has been pending for <strong>${businessDaysSince} business days</strong>.</p>
+              <p>Please review the application in the HR portal.</p>
+              <hr />
+              <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+            `,
+          })
+        } catch (emailErr) {
+          console.error('Leave SLA escalation email failed:', emailErr)
+        }
 
         processed++
       }

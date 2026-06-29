@@ -2,6 +2,7 @@ import { getActor, assertRole } from '../_shared/auth.ts'
 import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { createNotification } from '../_shared/notify.ts'
+import { sendEmail } from '../_shared/email.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -32,6 +33,12 @@ Deno.serve(async (req: Request) => {
     if (reqRecord.status !== 'pending') {
       throw { code: 'CONFLICT', message: 'This request has already been reviewed.', status: 409 }
     }
+
+    const { data: employee } = await supabase
+      .from('employees')
+      .select('email')
+      .eq('id', reqRecord.employee_id)
+      .single()
 
     const now = new Date().toISOString()
 
@@ -84,6 +91,22 @@ Deno.serve(async (req: Request) => {
       referenceId: request_id,
       referenceTable: 'attendance_regularization_requests',
     })
+
+    try {
+      await sendEmail({
+        to: employee.email,
+        subject: action === 'approve' ? 'Regularization Approved' : 'Regularization Rejected',
+        html: `
+          <h2>Regularization Request ${action === 'approve' ? 'Approved' : 'Rejected'}</h2>
+          <p>Your regularization request has been ${action === 'approve' ? 'approved' : 'rejected'}.</p>
+          ${comment ? `<p><strong>Reviewer Note:</strong> ${comment}</p>` : ''}
+          <hr />
+          <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
+        `,
+      })
+    } catch (emailErr) {
+      console.error('Regularization review email failed:', emailErr)
+    }
 
     return ok({
       request_id,
