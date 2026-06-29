@@ -189,7 +189,7 @@ function EmployeeDashboardView() {
   const handleCheckIn = async () => {
     try {
       const coords = await getCurrentPosition()
-      const result = await checkIn.mutateAsync(coords ?? {})
+      const result = await checkIn.mutateAsync(coords)
       toast.success(result.is_late ? 'Checked in — late' : 'Checked in successfully')
       refetch()
     } catch (e: unknown) {
@@ -206,10 +206,9 @@ function EmployeeDashboardView() {
   const handleCheckOutConfirm = async () => {
     try {
       const coords = await getCurrentPosition()
-      const body: Record<string, unknown> = {}
-      if (coords) {
-        body.latitude = coords.latitude
-        body.longitude = coords.longitude
+      const body: Record<string, unknown> = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
       }
       if (earlyCheckoutReason.trim()) {
         body.early_checkout_reason = earlyCheckoutReason.trim()

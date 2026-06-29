@@ -29,7 +29,7 @@ export function CheckInOutCard() {
   const handleCheckIn = async () => {
     try {
       const coords = await getCurrentPosition()
-      const result = await checkIn.mutateAsync(coords ?? {})
+      const result = await checkIn.mutateAsync(coords)
       toast.success(result.is_late ? 'Checked in — late' : 'Checked in successfully')
       if (result.status === 'half_day') {
         toast.info('Marked as half-day (check-in after 10:20)')
@@ -55,10 +55,9 @@ export function CheckInOutCard() {
   const handleCheckOutConfirm = async () => {
     try {
       const coords = await getCurrentPosition()
-      const body: Record<string, unknown> = {}
-      if (coords) {
-        body.latitude = coords.latitude
-        body.longitude = coords.longitude
+      const body: Record<string, unknown> = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
       }
       if (earlyCheckoutReason.trim()) {
         body.early_checkout_reason = earlyCheckoutReason.trim()

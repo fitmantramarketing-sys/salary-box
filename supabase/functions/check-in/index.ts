@@ -25,11 +25,19 @@ Deno.serve(async (req: Request) => {
     const supabase = getServiceClient()
     const shift = await resolveShift(actor.actorId, today)
 
-    let isGeoFlagged = false
-    if (latitude != null && longitude != null) {
+    // Geofence enforcement — hard block if outside any active geofence
+    // Owner bypasses for flexibility
+    if (actor.actorRole !== 'owner') {
+      if (latitude == null || longitude == null) {
+        throw { code: 'LOCATION_REQUIRED', message: 'Location access is required for check-in. Please enable GPS.', status: 403 }
+      }
       const geoCheck = await checkGeofence(Number(latitude), Number(longitude))
-      if (!geoCheck.inside) isGeoFlagged = true
+      if (!geoCheck.inside) {
+        throw { code: 'FORBIDDEN', message: 'Check-in location is outside the allowed geofence area.', status: 403 }
+      }
     }
+
+    let isGeoFlagged = false
 
     const now = new Date().toISOString()
 
