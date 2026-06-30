@@ -56,11 +56,11 @@ export type AttendanceRecordForCompute = {
   is_manually_entered: boolean
 }
 
-function isCheckInAfterHalfDayCutoff(checkInTime: string, shiftStart: string): boolean {
+function isCheckInAfterHalfDayCutoff(checkInTime: string, shiftStart: string, gracePeriodMinutes: number): boolean {
   const checkIn = new Date(checkInTime)
   const cutoff = new Date(checkInTime)
   const [sh, sm] = shiftStart.split(':').map(Number)
-  cutoff.setHours(sh, sm + 20, 0, 0)
+  cutoff.setHours(sh, sm + gracePeriodMinutes, 0, 0)
   return checkIn.getTime() > cutoff.getTime()
 }
 
@@ -106,7 +106,7 @@ export function computeStatus(
     shift.end_time
   )
 
-  if (isCheckInAfterHalfDayCutoff(record.check_in_time, shift.start_time)) {
+  if (isCheckInAfterHalfDayCutoff(record.check_in_time, shift.start_time, shift.grace_period_minutes)) {
     return { status: 'half_day', total_hours: totalHours, is_late: record.is_late }
   }
 

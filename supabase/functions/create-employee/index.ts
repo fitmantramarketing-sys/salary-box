@@ -56,14 +56,22 @@ Deno.serve(async (req: Request) => {
     }
 
     // 2. Auto-generate employee_code (EMP-YYYY-NNNN)
+    // Uses max() to avoid collisions when employees are deleted (gaps in sequence)
     const year = new Date().getFullYear().toString()
-    const { count } = await supabase
+    const { data: codeRows } = await supabase
       .from('employees')
-      .select('*', { head: true, count: 'exact' })
+      .select('employee_code')
       .like('employee_code', `EMP-${year}-%`)
+      .order('employee_code', { ascending: false })
+      .limit(1)
 
-    const nextSeq = ((count ?? 0) + 1).toString().padStart(4, '0')
-    const employeeCode = `EMP-${year}-${nextSeq}`
+    let nextSeq = 1
+    if (codeRows && codeRows.length > 0) {
+      const lastCode = codeRows[0].employee_code
+      const lastNum = parseInt(lastCode.split('-')[2] ?? '0', 10)
+      nextSeq = isNaN(lastNum) ? 1 : lastNum + 1
+    }
+    const employeeCode = `EMP-${year}-${nextSeq.toString().padStart(4, '0')}`
 
     // 3. Determine employment_status
     const today = new Date().toISOString().split('T')[0]
@@ -134,13 +142,19 @@ Deno.serve(async (req: Request) => {
         return err('INTERNAL_ERROR', `Failed to create auth account: ${authError?.message ?? 'No user returned'}`, 500)
       }
 
-      // Auth user exists — find and delete it, then retry
-      const { data: usersPage } = await supabase.auth.admin.listUsers({ page: 1, perPage: 100 })
-      const existingUser = usersPage?.users?.find((u) => u.email === email)
-      if (existingUser) {
-        const { error: deleteError } = await supabase.auth.admin.deleteUser(existingUser.id)
-        if (deleteError) {
-          console.error('Failed to delete orphaned auth user:', deleteError.message)
+      // Auth user exists but may be soft-deleted (invisible to listUsers API).
+      // Use GoTrue admin API directly with filter query to find by email.
+      const srKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+      const filterRes = await fetch(
+        `${supabaseUrl}/auth/v1/admin/users?filter=${encodeURIComponent(email)}`,
+        { headers: { Authorization: `Bearer ${srKey}`, apikey: srKey } }
+      )
+      if (filterRes.ok) {
+        const { users: filteredUsers } = await filterRes.json()
+        const staleUser = filteredUsers?.find((u: { email: string }) => u.email === email)
+        if (staleUser?.id) {
+          await supabase.auth.admin.deleteUser(staleUser.id)
         }
       }
     }
@@ -164,6 +178,7 @@ Deno.serve(async (req: Request) => {
       .eq('id', employee.id)
 
     // 6. Send welcome email (best-effort — don't fail the request)
+    const siteUrl = Deno.env.get('SITE_URL') ?? 'https://salary-box-sigma.vercel.app'
     try {
       await sendEmail({
         to: email,
@@ -174,7 +189,8 @@ Deno.serve(async (req: Request) => {
           <p><strong>Employee Code:</strong> ${employeeCode}</p>
           <p><strong>Email:</strong> ${email}</p>
           <p><strong>Temporary Password:</strong> ${tempPassword}</p>
-          <p>Please log in at the company HR portal and set a new password on first login.</p>
+          <p><a href="${siteUrl}/login" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600;">Log in to the HR Portal</a></p>
+          <p style="color: #666; font-size: 14px;">Or open this link in your browser: <a href="${siteUrl}/login">${siteUrl}/login</a></p>
           <hr />
           <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
         `,

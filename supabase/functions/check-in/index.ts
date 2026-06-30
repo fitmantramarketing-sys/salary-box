@@ -44,13 +44,13 @@ Deno.serve(async (req: Request) => {
     // BR-ATT-06: Late if check-in > shift start (no grace)
     const isLate = computeIsLate(now, shift.start_time, 0)
 
-    // Half-day if check-in >= 20 minutes after shift start
+    // Half-day if check-in > shift start + grace_period_minutes
     let status: string | null = null
     if (isLate) {
       const checkInDate = new Date(now)
       const [sh, sm] = shift.start_time.split(':').map(Number)
       const halfDayCutoff = new Date(now)
-      halfDayCutoff.setHours(sh, sm + 20, 0, 0)
+      halfDayCutoff.setHours(sh, sm + shift.grace_period_minutes, 0, 0)
       if (checkInDate.getTime() > halfDayCutoff.getTime()) {
         status = 'half_day'
       }
