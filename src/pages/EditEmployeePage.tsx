@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Loader2, ArrowLeft } from 'lucide-react'
+import { useRole } from '@/hooks/useRole'
 import { useEmployee, useDepartments, useDesignations, useActiveManagers } from '@/features/employees/hooks'
 import { useUpdateEmployee } from '@/features/employees/mutations'
 import { Button } from '@/components/ui/button'
@@ -41,6 +42,7 @@ const editEmployeeSchema = z.object({
   employment_type: z.enum(['full_time', 'part_time', 'contractor', 'intern']),
   join_date: z.string().min(1, 'Required'),
   probation_end_date: z.string().optional(),
+  current_salary: z.number().positive().optional().or(z.literal('')),
 })
 
 type EditForm = z.infer<typeof editEmployeeSchema>
@@ -52,6 +54,7 @@ export default function EditEmployeePage() {
   const { data: departments = [] } = useDepartments()
   const { data: designations = [] } = useDesignations()
   const { data: managers = [] } = useActiveManagers()
+  const { isOwner } = useRole()
   const updateEmployee = useUpdateEmployee()
 
   const form = useForm<EditForm>({
@@ -61,7 +64,7 @@ export default function EditEmployeePage() {
       gender: '' as EditForm['gender'], personal_email: '', address_line1: '', address_line2: '',
       city: '', state: '', pincode: '', emergency_contact_name: '', emergency_contact_phone: '',
       department_id: '', designation_id: '', reporting_manager_id: '',
-      employment_type: 'full_time', join_date: '', probation_end_date: '',
+      employment_type: 'full_time', join_date: '', probation_end_date: '', current_salary: '',
     },
   })
 
@@ -88,6 +91,7 @@ export default function EditEmployeePage() {
         employment_type: employee.employment_type,
         join_date: employee.join_date,
         probation_end_date: employee.probation_end_date ?? '',
+        current_salary: employee.current_salary ?? '',
       })
     }
   }, [employee, form])
@@ -116,7 +120,9 @@ export default function EditEmployeePage() {
         department_id: values.department_id || null,
         designation_id: values.designation_id || null,
         reporting_manager_id: values.reporting_manager_id || null,
+        date_of_birth: values.date_of_birth || null,
         probation_end_date: values.probation_end_date || null,
+        current_salary: values.current_salary || null,
       })
       toast.success('Employee updated')
       navigate(`/employees/${empId}`)
@@ -237,6 +243,13 @@ export default function EditEmployeePage() {
               <FormField control={form.control} name="probation_end_date" render={({ field }) => (
                 <FormItem><FormLabel>Probation End</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
+              {isOwner && (
+                <FormField control={form.control} name="current_salary" render={({ field }) => (
+                  <FormItem><FormLabel>Current Salary (₹)</FormLabel><FormControl>
+                    <Input type="number" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : '')} />
+                  </FormControl><FormMessage /></FormItem>
+                )} />
+              )}
             </CardContent>
           </Card>
 
