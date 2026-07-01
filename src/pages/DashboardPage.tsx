@@ -86,6 +86,9 @@ function OwnerDashboard() {
         <CardContent>
           <div className="text-2xl font-bold">{counts?.totalEmployees ?? 0}</div>
           <p className="text-xs text-muted-foreground">Active employees</p>
+          <Link to="/employees" className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1">
+            View all <ArrowRight className="h-3 w-3" />
+          </Link>
         </CardContent>
       </Card>
       <Card>
@@ -96,6 +99,9 @@ function OwnerDashboard() {
         <CardContent>
           <div className="text-2xl font-bold text-amber-600">{counts?.pendingLeaves ?? 0}</div>
           <p className="text-xs text-muted-foreground">Awaiting approval</p>
+          <Link to="/leave/team" className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1">
+            Review leaves <ArrowRight className="h-3 w-3" />
+          </Link>
         </CardContent>
       </Card>
       <Card>
@@ -106,6 +112,9 @@ function OwnerDashboard() {
         <CardContent>
           <div className="text-2xl font-bold text-amber-600">{counts?.pendingRegularizations ?? 0}</div>
           <p className="text-xs text-muted-foreground">Pending requests</p>
+          <Link to="/regularization" className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1">
+            Review requests <ArrowRight className="h-3 w-3" />
+          </Link>
         </CardContent>
       </Card>
       <Card>
@@ -435,13 +444,21 @@ function EmployeeDashboardView() {
             </CardContent>
           </Card>
         ))}
+        <Link to="/leave" className="flex items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 p-4 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
+          Apply for leave <ArrowRight className="ml-1 h-3 w-3" />
+        </Link>
       </div>
 
       {/* Upcoming Leaves */}
       {dashboard?.upcomingLeaves && dashboard.upcomingLeaves.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Upcoming Leaves</CardTitle>
+            <CardTitle className="text-base flex items-center justify-between">
+              <span>Upcoming Leaves</span>
+              <Link to="/leave" className="text-xs font-normal text-primary hover:underline inline-flex items-center gap-1">
+                View all <ArrowRight className="h-3 w-3" />
+              </Link>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {dashboard.upcomingLeaves.map((leave) => (
