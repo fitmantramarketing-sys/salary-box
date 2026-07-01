@@ -112,7 +112,7 @@ function OwnerDashboard() {
         <CardContent>
           <div className="text-2xl font-bold text-amber-600">{counts?.pendingRegularizations ?? 0}</div>
           <p className="text-xs text-muted-foreground">Pending requests</p>
-          <Link to="/regularization" className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1">
+          <Link to="/attendance/regularization" className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1">
             Review requests <ArrowRight className="h-3 w-3" />
           </Link>
         </CardContent>
