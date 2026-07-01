@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { NavLink, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink, Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   Users,
@@ -124,6 +124,7 @@ function NavItem({ icon: Icon, href, label, onClick }: { icon: React.ElementType
   return (
     <NavLink
       to={href}
+      end
       onClick={onClick}
       className={({ isActive }) =>
         cn(
@@ -153,13 +154,24 @@ function NavGroupItem({
   defaultOpen?: boolean
   onChildClick?: () => void
 }) {
-  const [open, setOpen] = useState(defaultOpen ?? false)
+  const location = useLocation()
+  const childActive = children.some((c) => location.pathname === c.href || location.pathname.startsWith(c.href + '/'))
+  const [open, setOpen] = useState(defaultOpen ?? childActive)
+
+  useEffect(() => {
+    if (childActive) setOpen(true)
+  }, [childActive])
 
   return (
     <div>
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        className={cn(
+          'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+          childActive
+            ? 'bg-primary/10 text-primary font-medium'
+            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+        )}
       >
         <Icon className="h-4 w-4 shrink-0" />
         <span className="flex-1 text-left">{label}</span>
@@ -171,6 +183,7 @@ function NavGroupItem({
             <NavLink
               key={child.href}
               to={child.href}
+              end
               onClick={onChildClick}
               className={({ isActive }) =>
                 cn(
@@ -229,7 +242,6 @@ export function Sidebar({ open, onClose }: Props) {
                 icon={group.icon}
                 label={group.label}
                 children={group.children.map((c) => ({ label: c.label, href: c.href }))}
-                defaultOpen={true}
                 onChildClick={onClose}
               />
             )
