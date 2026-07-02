@@ -25,6 +25,7 @@ export function CheckInOutCard() {
   const [lateWarning, setLateWarning] = useState<{ count: number; threshold: number } | null>(null)
   const [earlyCheckoutOpen, setEarlyCheckoutOpen] = useState(false)
   const [earlyCheckoutReason, setEarlyCheckoutReason] = useState('')
+  const [wfhDialogOpen, setWfhDialogOpen] = useState(false)
 
   const handleCheckIn = async () => {
     try {
@@ -89,9 +90,12 @@ export function CheckInOutCard() {
     }
   }
 
-  const handleLogWFH = async () => {
+  const handleLogWFHClick = () => setWfhDialogOpen(true)
+
+  const handleLogWFHConfirm = async () => {
     try {
       await logWFH.mutateAsync()
+      setWfhDialogOpen(false)
       toast.success('WFH logged for today')
       refetch()
     } catch (e: unknown) {
@@ -166,7 +170,7 @@ export function CheckInOutCard() {
               size="lg"
               variant="secondary"
               disabled={checkedIn || isWFH || logWFH.isPending}
-              onClick={handleLogWFH}
+              onClick={handleLogWFHClick}
             >
               {logWFH.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Home className="mr-2 h-4 w-4" />}
               {isWFH ? 'WFH Logged' : 'Log WFH'}
@@ -174,6 +178,21 @@ export function CheckInOutCard() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={wfhDialogOpen} onOpenChange={setWfhDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Log Work From Home</DialogTitle>
+            <DialogDescription>
+              Are you working from home today? This will mark your entire day as WFH.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWfhDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleLogWFHConfirm}>Confirm WFH</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={earlyCheckoutOpen} onOpenChange={setEarlyCheckoutOpen}>
         <DialogContent>
