@@ -4,7 +4,8 @@ import { getServiceClient } from '../_shared/supabase.ts'
 import { resolveShift } from '../_shared/shift.ts'
 import { checkIpWhitelist } from '../_shared/ip.ts'
 import { checkGeofence } from '../_shared/geo.ts'
-import { computeIsLate } from '../_shared/attendance.ts'
+import { computeIsLate, computeStatus, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
+import { isHoliday, isWeeklyOff } from '../_shared/holiday.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -44,24 +45,25 @@ Deno.serve(async (req: Request) => {
     // Late if check-in > shift start (no grace)
     const isLate = computeIsLate(now, shift.start_time, 0)
 
-    // Determine status from minutes past shift start:
-    //   0–5 min → present + late        (keep null, computeStatus sets present)
-    //   5–20 min → half_day + late
-    //   >20 min → absent + late
-    let status: string | null = null
-    if (isLate) {
-      const checkInDate = new Date(now)
-      const [sh, sm] = shift.start_time.split(':').map(Number)
-      const shiftStartToday = new Date(now)
-      shiftStartToday.setHours(sh, sm, 0, 0)
-      const diffMin = (checkInDate.getTime() - shiftStartToday.getTime()) / (1000 * 60)
+    // Compute status using shared function — handles all branches
+    const holidayFlag = await isHoliday(actor.actorId, today)
+    const woffFlag = isWeeklyOff(shift, today)
 
-      if (diffMin > 5 && diffMin <= 20) {
-        status = 'half_day'
-      } else if (diffMin > 20) {
-        status = 'absent'
-      }
-    }
+    const statusResult = computeStatus(
+      {
+        employee_id: actor.actorId,
+        date: today,
+        check_in_time: now,
+        check_out_time: null,
+        is_wfh: false,
+        status: 'absent',        // placeholder, computeStatus overrides
+        is_late: isLate,
+        is_manually_entered: false,
+      } as AttendanceRecordForCompute,
+      shift,
+      holidayFlag,
+      woffFlag
+    )
 
     const { data: existing } = await supabase
       .from('attendance_records')
@@ -90,10 +92,10 @@ Deno.serve(async (req: Request) => {
       shift_id: shift.id,
       check_in_time: now,
       check_in_ip: clientIp || null,
-      is_late: isLate,
+      is_late: statusResult.is_late,
       is_geo_flagged: isGeoFlagged,
+      status: statusResult.status,
     }
-    if (status) payload.status = status
     if (latitude != null) payload.check_in_lat = Number(latitude)
     if (longitude != null) payload.check_in_lng = Number(longitude)
 

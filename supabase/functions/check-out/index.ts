@@ -3,7 +3,8 @@ import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { resolveShift } from '../_shared/shift.ts'
 import { checkDrift, checkGeofence } from '../_shared/geo.ts'
-import { computeTotalHours } from '../_shared/attendance.ts'
+import { computeStatus, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
+import { isHoliday, isWeeklyOff } from '../_shared/holiday.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -49,12 +50,24 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const totalHours = computeTotalHours(
-      record.check_in_time,
-      now,
-      shift.break_minutes,
-      shift.is_night_shift,
-      shift.end_time
+    // Re-compute status with check-out data for real-time accuracy
+    const holidayFlag = await isHoliday(actor.actorId, today)
+    const woffFlag = isWeeklyOff(shift, today)
+
+    const statusResult = computeStatus(
+      {
+        employee_id: record.employee_id,
+        date: today,
+        check_in_time: record.check_in_time,
+        check_out_time: now,
+        is_wfh: record.is_wfh,
+        status: record.status,
+        is_late: record.is_late,
+        is_manually_entered: record.is_manually_entered,
+      } as AttendanceRecordForCompute,
+      shift,
+      holidayFlag,
+      woffFlag
     )
 
     // Geofence enforcement — hard block if outside any active geofence
@@ -87,7 +100,9 @@ Deno.serve(async (req: Request) => {
 
     const updates: Record<string, unknown> = {
       check_out_time: now,
-      total_hours: totalHours,
+      total_hours: statusResult.total_hours,
+      status: statusResult.status,
+      is_late: statusResult.is_late,
       is_geo_flagged: isGeoFlagged,
     }
     if (isEarly) {
