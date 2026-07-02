@@ -4,7 +4,7 @@ import { getServiceClient } from '../_shared/supabase.ts'
 import { resolveShift } from '../_shared/shift.ts'
 import { checkIpWhitelist } from '../_shared/ip.ts'
 import { checkGeofence } from '../_shared/geo.ts'
-import { computeIsLate, computeStatus, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
+import { computeStatus, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
 import { isHoliday, isWeeklyOff } from '../_shared/holiday.ts'
 
 Deno.serve(async (req: Request) => {
@@ -42,9 +42,6 @@ Deno.serve(async (req: Request) => {
 
     const now = new Date().toISOString()
 
-    // Late if check-in > shift start (no grace)
-    const isLate = computeIsLate(now, shift.start_time, 0)
-
     // Compute status using shared function — handles all branches
     const holidayFlag = await isHoliday(actor.actorId, today)
     const woffFlag = isWeeklyOff(shift, today)
@@ -57,7 +54,7 @@ Deno.serve(async (req: Request) => {
         check_out_time: null,
         is_wfh: false,
         status: 'absent',        // placeholder, computeStatus overrides
-        is_late: isLate,
+        is_late: false,
         is_manually_entered: false,
       } as AttendanceRecordForCompute,
       shift,
@@ -113,7 +110,7 @@ Deno.serve(async (req: Request) => {
       is_late: record.is_late,
       is_geo_flagged: record.is_geo_flagged,
       status: record.status,
-      late_count_this_month: (lateCount ?? 0) + (isLate ? 1 : 0),
+      late_count_this_month: (lateCount ?? 0) + (statusResult.is_late ? 1 : 0),
       late_threshold: shift.late_mark_threshold,
     })
   } catch (e) {

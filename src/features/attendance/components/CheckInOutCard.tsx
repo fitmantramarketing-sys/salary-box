@@ -32,7 +32,7 @@ export function CheckInOutCard() {
       const result = await checkIn.mutateAsync(coords)
       toast.success(result.is_late ? 'Checked in — late' : 'Checked in successfully')
       if (result.status === 'half_day') {
-        toast.info('Marked as half-day (check-in after 10:20)')
+        toast.info('Half-day: check-in was 5-20 min after shift start')
       }
       if (result.late_count_this_month != null && result.late_threshold != null) {
         const remaining = result.late_threshold - (result.late_count_this_month - 1)

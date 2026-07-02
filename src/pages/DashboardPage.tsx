@@ -164,22 +164,38 @@ function HRDashboard() {
     }
   }
 
-  const handleCheckOutClick = () => {
-    setEarlyCheckoutReason('')
-    setEarlyCheckoutOpen(true)
+  const handleCheckOutClick = async () => {
+    try {
+      const coords = await getCurrentPosition()
+      const result = await checkOut.mutateAsync({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      })
+      toast.success(`Checked out. Total: ${result.total_hours}h`)
+      refetch()
+    } catch (e: unknown) {
+      const err = e as { message?: string; code?: string }
+      if (err?.code === 'VALIDATION_ERROR' && err?.message?.toLowerCase().includes('early_checkout_reason')) {
+        setEarlyCheckoutReason('')
+        setEarlyCheckoutOpen(true)
+      } else {
+        toast.error(err?.message ?? 'Check-out failed')
+      }
+    }
   }
 
   const handleCheckOutConfirm = async () => {
+    if (!earlyCheckoutReason.trim()) {
+      toast.error('Please provide a reason for early checkout')
+      return
+    }
     try {
       const coords = await getCurrentPosition()
-      const body: Record<string, unknown> = {
+      const result = await checkOut.mutateAsync({
         latitude: coords.latitude,
         longitude: coords.longitude,
-      }
-      if (earlyCheckoutReason.trim()) {
-        body.early_checkout_reason = earlyCheckoutReason.trim()
-      }
-      const result = await checkOut.mutateAsync(body)
+        early_checkout_reason: earlyCheckoutReason.trim(),
+      })
       setEarlyCheckoutOpen(false)
       toast.success(`Checked out. Total: ${result.total_hours}h`)
       refetch()
@@ -353,22 +369,38 @@ function EmployeeDashboardView() {
     }
   }
 
-  const handleCheckOutClick = () => {
-    setEarlyCheckoutReason('')
-    setEarlyCheckoutOpen(true)
+  const handleCheckOutClick = async () => {
+    try {
+      const coords = await getCurrentPosition()
+      const result = await checkOut.mutateAsync({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      })
+      toast.success(`Checked out. Total: ${result.total_hours}h`)
+      refetch()
+    } catch (e: unknown) {
+      const err = e as { message?: string; code?: string }
+      if (err?.code === 'VALIDATION_ERROR' && err?.message?.toLowerCase().includes('early_checkout_reason')) {
+        setEarlyCheckoutReason('')
+        setEarlyCheckoutOpen(true)
+      } else {
+        toast.error(err?.message ?? 'Check-out failed')
+      }
+    }
   }
 
   const handleCheckOutConfirm = async () => {
+    if (!earlyCheckoutReason.trim()) {
+      toast.error('Please provide a reason for early checkout')
+      return
+    }
     try {
       const coords = await getCurrentPosition()
-      const body: Record<string, unknown> = {
+      const result = await checkOut.mutateAsync({
         latitude: coords.latitude,
         longitude: coords.longitude,
-      }
-      if (earlyCheckoutReason.trim()) {
-        body.early_checkout_reason = earlyCheckoutReason.trim()
-      }
-      const result = await checkOut.mutateAsync(body)
+        early_checkout_reason: earlyCheckoutReason.trim(),
+      })
       setEarlyCheckoutOpen(false)
       toast.success(`Checked out. Total: ${result.total_hours}h`)
       refetch()

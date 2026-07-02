@@ -1,5 +1,13 @@
 import type { ShiftInfo } from './shift.ts'
 
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
+
+export function getISTMinutes(utcIso: string): number {
+  const d = new Date(utcIso)
+  const ist = new Date(d.getTime() + IST_OFFSET_MS)
+  return ist.getUTCHours() * 60 + ist.getUTCMinutes()
+}
+
 export function computeTotalHours(
   checkIn: string,
   checkOut: string,
@@ -11,9 +19,11 @@ export function computeTotalHours(
   let outTime = new Date(checkOut).getTime()
 
   if (capAt) {
-    const capTime = new Date(checkIn)
+    const checkInDate = new Date(checkIn)
+    const checkInIST = new Date(checkInDate.getTime() + IST_OFFSET_MS)
     const [ch, cm] = capAt.split(':').map(Number)
-    capTime.setHours(ch, cm, 0, 0)
+    checkInIST.setUTCHours(ch, cm, 0, 0)
+    const capTime = new Date(checkInIST.getTime() - IST_OFFSET_MS)
     if (outTime > capTime.getTime()) {
       outTime = capTime.getTime()
     }
@@ -34,12 +44,10 @@ export function computeIsLate(
   shiftStart: string,
   gracePeriodMinutes: number
 ): boolean {
-  const checkIn = new Date(checkInTime)
-  const startToday = new Date(checkInTime)
+  const checkInMinutes = getISTMinutes(checkInTime)
   const [sh, sm] = shiftStart.split(':').map(Number)
-  startToday.setHours(sh, sm, 0, 0)
-  const graceMs = gracePeriodMinutes * 60 * 1000
-  return checkIn.getTime() > startToday.getTime() + graceMs
+  const shiftStartMinutes = sh * 60 + sm
+  return checkInMinutes > shiftStartMinutes + gracePeriodMinutes
 }
 
 export type AttendanceRecordForCompute = {
@@ -88,13 +96,12 @@ export function computeStatus(
   }
 
   // Minutes past shift start (negative = before shift)
-  const checkIn = new Date(record.check_in_time)
-  const startToday = new Date(record.check_in_time)
+  const checkInMinutes = getISTMinutes(record.check_in_time)
   const [sh, sm] = shift.start_time.split(':').map(Number)
-  startToday.setHours(sh, sm, 0, 0)
-  const diffMin = (checkIn.getTime() - startToday.getTime()) / (1000 * 60)
+  const shiftStartMinutes = sh * 60 + sm
+  const diffMin = checkInMinutes - shiftStartMinutes
 
-  const isLate = checkIn.getTime() > startToday.getTime()
+  const isLate = checkInMinutes > shiftStartMinutes
 
   // Compute total_hours if check-out exists
   let totalHours: number | null = null
