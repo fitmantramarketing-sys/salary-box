@@ -122,9 +122,12 @@ function OwnerDashboard() {
           <CardTitle className="text-sm font-medium">Reports</CardTitle>
           <AlertTriangle className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2">
           <Link to="/reports/attendance" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
-            View reports <ArrowRight className="h-3 w-3" />
+            Attendance Report <ArrowRight className="h-3 w-3" />
+          </Link>
+          <Link to="/reports/daily" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+            Daily Attendance <ArrowRight className="h-3 w-3" />
           </Link>
         </CardContent>
       </Card>

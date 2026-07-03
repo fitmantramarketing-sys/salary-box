@@ -17,6 +17,7 @@ const REPORTS: ReportLink[] = [
   { label: 'Headcount', href: '/reports/headcount', description: 'Employee headcount by status, type, and department', icon: Users, roles: ['owner', 'system_admin'] },
   { label: 'Regularization Log', href: '/reports/regularization', description: 'Audit trail of all regularization requests', icon: ClipboardList, roles: ['owner'] },
   { label: 'Attendance Heatmap', href: '/reports/heatmap', description: 'Department attendance percentage heatmap', icon: Grid3x3, roles: ['owner'] },
+  { label: 'Daily Attendance', href: '/reports/daily', description: 'Day-by-day check-in, check-out, late, WFH, hours', icon: BarChart3, roles: ['owner'] },
 ]
 
 export default function ReportsHomePage() {

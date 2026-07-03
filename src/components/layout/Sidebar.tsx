@@ -75,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Headcount', href: '/reports/headcount', roles: ['owner', 'system_admin'] },
       { label: 'Regularization Log', href: '/reports/regularization', roles: ['owner'] },
       { label: 'Heatmap', href: '/reports/heatmap', roles: ['owner'] },
+      { label: 'Daily Attendance', href: '/reports/daily', roles: ['owner'] },
     ],
   },
   { label: 'Audit Logs', href: '/audit-logs', icon: ClipboardList, roles: ['owner', 'system_admin'] },

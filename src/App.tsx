@@ -47,6 +47,7 @@ import ReportsHeadcountPage from '@/pages/ReportsHeadcountPage'
 import ReportsRegularizationPage from '@/pages/ReportsRegularizationPage'
 import ReportsHeatmapPage from '@/pages/ReportsHeatmapPage'
 import ReportsHomePage from '@/pages/ReportsHomePage'
+import DailyAttendanceReportPage from '@/pages/DailyAttendanceReportPage'
 import RolesPage from '@/pages/RolesPage'
 import AuditLogsPage from '@/pages/AuditLogsPage'
 
@@ -60,15 +61,19 @@ export default function App() {
    */
   const hydrateEmployee = useCallback(
     async (user: Parameters<typeof setAuth>[0]) => {
-      const { data: employee } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('auth_id', user.id)
-        .single()
+      try {
+        const { data: employee } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('auth_id', user.id)
+          .single()
 
-      if (employee) {
-        setAuth(user, employee)
-        return employee
+        if (employee) {
+          setAuth(user, employee)
+          return employee
+        }
+      } catch (err) {
+        console.error('Failed to hydrate employee:', err)
       }
 
       // Auth user exists but no employee row — edge case (orphaned auth account)
@@ -80,53 +85,63 @@ export default function App() {
 
   useEffect(() => {
     // 1. Check existing session on mount
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const employee = await hydrateEmployee(session.user)
-        // If first login, redirect to set-password
-        if (employee?.is_first_login) {
-          navigate('/set-password', { replace: true })
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session } }) => {
+        if (session?.user) {
+          const employee = await hydrateEmployee(session.user)
+          if (employee?.is_first_login) {
+            navigate('/set-password', { replace: true })
+          }
+        } else {
+          setLoading(false)
         }
-      } else {
+      })
+      .catch((err) => {
+        console.error('getSession failed:', err)
         setLoading(false)
-      }
-    })
+      })
 
     // 2. Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const employee = await hydrateEmployee(session.user)
-        if (employee?.is_first_login) {
-          navigate('/set-password', { replace: true })
-        } else if (employee) {
-          // If the user just completed set-password, don't override the
-          // onboarding navigation — SetPasswordForm handles it.
-          const isPostPasswordSetup = useAuthStore.getState().isPostPasswordSetup
-          if (isPostPasswordSetup) {
-            useAuthStore.getState().setPostPasswordSetup(false)
-          } else {
-            navigate('/dashboard', { replace: true })
+      try {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const employee = await hydrateEmployee(session.user)
+          if (employee?.is_first_login) {
+            navigate('/set-password', { replace: true })
+          } else if (employee) {
+            const isPostPasswordSetup = useAuthStore.getState().isPostPasswordSetup
+            if (isPostPasswordSetup) {
+              useAuthStore.getState().setPostPasswordSetup(false)
+            } else {
+              navigate('/dashboard', { replace: true })
+            }
           }
         }
-      }
 
-      if (event === 'TOKEN_REFRESHED' && session?.user) {
-        // Re-hydrate on token refresh to pick up any role/employee changes
-        await hydrateEmployee(session.user)
-      }
+        if (event === 'TOKEN_REFRESHED' && session?.user) {
+          await hydrateEmployee(session.user)
+        }
 
-      if (event === 'SIGNED_OUT') {
-        clearAuth()
-        navigate('/login', { replace: true })
-      }
+        if (event === 'SIGNED_OUT') {
+          // Attempt to recover the session before signing out — handles
+          // transient network blips during auto-refresh.
+          const { data } = await supabase.auth.refreshSession()
+          if (data.session) return
 
-      if (event === 'PASSWORD_RECOVERY' && session?.user) {
-        // User clicked the password reset link from email
-        await hydrateEmployee(session.user)
-        setPasswordRecovery(true)
-        navigate('/set-password', { replace: true })
+          clearAuth()
+          navigate('/login', { replace: true })
+        }
+
+        if (event === 'PASSWORD_RECOVERY' && session?.user) {
+          await hydrateEmployee(session.user)
+          setPasswordRecovery(true)
+          navigate('/set-password', { replace: true })
+        }
+      } catch (err) {
+        console.error('onAuthStateChange handler failed:', err)
       }
     })
 
@@ -228,6 +243,7 @@ export default function App() {
               <Route element={<RequireRole allow={['owner']} />}>
                 <Route path="/reports/regularization" element={<ReportsRegularizationPage />} />
                 <Route path="/reports/heatmap" element={<ReportsHeatmapPage />} />
+                <Route path="/reports/daily" element={<DailyAttendanceReportPage />} />
               </Route>
 
               {/* Audit Logs */}

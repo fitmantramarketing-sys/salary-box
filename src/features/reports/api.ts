@@ -291,6 +291,82 @@ export async function fetchRegularizationLog(
   return filtered
 }
 
+export type DailyAttendanceRow = {
+  employeeId: string
+  employeeName: string
+  employeeCode: string
+  departmentName: string | null
+  checkIn: string | null
+  checkOut: string | null
+  totalHours: number | null
+  isLate: boolean
+  isWfh: boolean
+  status: string
+}
+
+export async function fetchDailyAttendance(date: string): Promise<DailyAttendanceRow[]> {
+  const [empRes, attRes, holRes, shiftRes] = await Promise.all([
+    supabase
+      .from('employees')
+      .select('id, first_name, last_name, employee_code, department:departments!department_id(name)')
+      .eq('is_active', true)
+      .order('first_name'),
+    supabase
+      .from('attendance_records')
+      .select('*')
+      .eq('date', date),
+    supabase
+      .from('holidays')
+      .select('date')
+      .eq('date', date),
+    supabase
+      .from('shifts')
+      .select('weekly_off_days')
+      .eq('is_default', true)
+      .limit(1),
+  ])
+
+  if (empRes.error) throw empRes.error
+  if (attRes.error) throw attRes.error
+  if (holRes.error) throw holRes.error
+
+  const employees = empRes.data ?? []
+  const records = attRes.data ?? []
+  const isHoliday = (holRes.data ?? []).length > 0
+  const weeklyOffDays = new Set<number>((shiftRes.data?.[0]?.weekly_off_days as number[] | undefined) ?? [0])
+  const dayOfWeek = new Date(date).getDay()
+  const isWeeklyOff = !isHoliday && weeklyOffDays.has(dayOfWeek)
+
+  const recordMap = new Map<string, typeof records[0]>()
+  for (const r of records) {
+    recordMap.set(r.employee_id, r)
+  }
+
+  return employees.map((emp) => {
+    const dept = emp.department as { name: string } | null
+    const rec = recordMap.get(emp.id)
+
+    let status = rec?.status ?? 'absent'
+    if (!rec) {
+      if (isHoliday) status = 'holiday'
+      else if (isWeeklyOff) status = 'weekly_off'
+    }
+
+    return {
+      employeeId: emp.id,
+      employeeName: `${emp.first_name} ${emp.last_name}`,
+      employeeCode: emp.employee_code,
+      departmentName: dept?.name ?? null,
+      checkIn: rec?.check_in_time ?? null,
+      checkOut: rec?.check_out_time ?? null,
+      totalHours: rec?.total_hours ?? null,
+      isLate: rec?.is_late ?? false,
+      isWfh: rec?.is_wfh ?? false,
+      status,
+    }
+  })
+}
+
 export type AbsenteeismRow = {
   employeeId: string
   employeeName: string
