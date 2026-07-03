@@ -217,10 +217,16 @@ function NewRequestDialog() {
           <div className="space-y-2">
             <Label>Requested Check-in (optional)</Label>
             <Input type="datetime-local" {...form.register('requested_check_in')} />
+            {form.formState.errors.requested_check_in && (
+              <p className="text-xs text-red-500">{form.formState.errors.requested_check_in.message}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Requested Check-out (optional)</Label>
             <Input type="datetime-local" {...form.register('requested_check_out')} />
+            {form.formState.errors.requested_check_out && (
+              <p className="text-xs text-red-500">{form.formState.errors.requested_check_out.message}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Reason</Label>

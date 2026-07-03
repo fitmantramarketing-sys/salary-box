@@ -18,6 +18,14 @@ Deno.serve(async (req: Request) => {
       throw { code: 'VALIDATION_ERROR', message: 'attendance_record_id, requested_status, and reason are required.', status: 400 }
     }
 
+    const now = new Date()
+    if (requested_check_in && new Date(requested_check_in) > now) {
+      throw { code: 'VALIDATION_ERROR', message: 'Requested check-in time cannot be in the future.', status: 400 }
+    }
+    if (requested_check_out && new Date(requested_check_out) > now) {
+      throw { code: 'VALIDATION_ERROR', message: 'Requested check-out time cannot be in the future.', status: 400 }
+    }
+
     const supabase = getServiceClient()
 
     const { data: record } = await supabase

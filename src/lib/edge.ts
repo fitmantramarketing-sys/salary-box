@@ -1,12 +1,35 @@
 import { supabase } from './supabase'
 
+/**
+ * Returns a fresh access token, refreshing the session if the current
+ * token is expired or about to expire (within 60 seconds).
+ */
+async function getFreshToken(): Promise<string> {
+  const { data: sessionData } = await supabase.auth.getSession()
+  const session = sessionData.session
+  if (!session) throw { code: 'UNAUTHORIZED', message: 'Not authenticated' }
+
+  // Check if token expires within the next 60 seconds
+  const expiresAt = session.expires_at // unix timestamp in seconds
+  const nowSec = Math.floor(Date.now() / 1000)
+
+  if (expiresAt && expiresAt - nowSec < 60) {
+    // Token expired or about to expire — force refresh
+    const { data: refreshed, error } = await supabase.auth.refreshSession()
+    if (error || !refreshed.session) {
+      throw { code: 'UNAUTHORIZED', message: 'Session expired. Please sign in again.' }
+    }
+    return refreshed.session.access_token
+  }
+
+  return session.access_token
+}
+
 export async function callEdgeFunction<TBody, TResponse>(
   functionName: string,
   body: TBody
 ): Promise<TResponse> {
-  const { data: sessionData } = await supabase.auth.getSession()
-  const token = sessionData.session?.access_token
-  if (!token) throw { code: 'UNAUTHORIZED', message: 'Not authenticated' }
+  const token = await getFreshToken()
 
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,
@@ -36,9 +59,7 @@ export async function callEdgeFunctionFormData<TResponse>(
   functionName: string,
   formData: FormData
 ): Promise<TResponse> {
-  const { data: sessionData } = await supabase.auth.getSession()
-  const token = sessionData.session?.access_token
-  if (!token) throw { code: 'UNAUTHORIZED', message: 'Not authenticated' }
+  const token = await getFreshToken()
 
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,

@@ -6,6 +6,13 @@ export const submitRegularizationSchema = z.object({
   requested_check_in: z.string().optional(),
   requested_check_out: z.string().optional(),
   reason: z.string().min(5, 'Please provide a reason'),
+}).superRefine((data, ctx) => {
+  if (data.requested_check_in && new Date(data.requested_check_in) > new Date()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Cannot be in the future', path: ['requested_check_in'] })
+  }
+  if (data.requested_check_out && new Date(data.requested_check_out) > new Date()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Cannot be in the future', path: ['requested_check_out'] })
+  }
 })
 export type SubmitRegularizationForm = z.infer<typeof submitRegularizationSchema>
 
