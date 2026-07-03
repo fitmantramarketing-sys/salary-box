@@ -1,7 +1,7 @@
 import { getActor, assertRole } from '../_shared/auth.ts'
 import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
-import { resolveShift } from '../_shared/shift.ts'
+import { getEffectiveTimes, resolveShift } from '../_shared/shift.ts'
 import { computeTotalHours, computeIsLate } from '../_shared/attendance.ts'
 import { createNotification } from '../_shared/notify.ts'
 import { sendEmail } from '../_shared/email.ts'
@@ -57,6 +57,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const shift = await resolveShift(reqRecord.employee_id, attRecord.date)
+      const effectiveShift = getEffectiveTimes(shift, attRecord.date)
 
       // Effective times: requested overrides existing
       const effectiveCheckIn = reqRecord.requested_check_in ?? attRecord.check_in_time
@@ -78,7 +79,7 @@ Deno.serve(async (req: Request) => {
 
       // Recompute derived fields
       if (effectiveCheckIn) {
-        updates.is_late = computeIsLate(effectiveCheckIn, shift.start_time, 0)
+        updates.is_late = computeIsLate(effectiveCheckIn, effectiveShift.start_time, 0)
       }
 
       if (effectiveCheckIn && effectiveCheckOut) {
@@ -87,7 +88,7 @@ Deno.serve(async (req: Request) => {
           effectiveCheckOut,
           shift.break_minutes,
           shift.is_night_shift,
-          shift.end_time
+          effectiveShift.end_time
         )
       } else {
         updates.total_hours = null

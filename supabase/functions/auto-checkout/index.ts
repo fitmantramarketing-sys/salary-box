@@ -1,6 +1,6 @@
 import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
-import { resolveShift } from '../_shared/shift.ts'
+import { getEffectiveTimes, resolveShift } from '../_shared/shift.ts'
 import { computeTotalHours } from '../_shared/attendance.ts'
 import { createNotification } from '../_shared/notify.ts'
 import { sendEmail } from '../_shared/email.ts'
@@ -35,7 +35,8 @@ Deno.serve(async (req: Request) => {
     for (const record of incomplete) {
       try {
         const shift = await resolveShift(record.employee_id, today)
-        const [eh, em] = shift.end_time.split(':').map(Number)
+        const effectiveEnd = getEffectiveTimes(shift, today).end_time
+        const [eh, em] = effectiveEnd.split(':').map(Number)
         let totalMinutes = eh * 60 + em + bufferMinutes
         const autoH = Math.floor(totalMinutes / 60)
         const autoM = totalMinutes % 60
@@ -48,7 +49,7 @@ Deno.serve(async (req: Request) => {
               autoCheckoutIso,
               shift.break_minutes,
               shift.is_night_shift,
-              shift.end_time
+              effectiveEnd
             )
           : null
 

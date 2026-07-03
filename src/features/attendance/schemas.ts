@@ -16,5 +16,12 @@ export const manualAttendanceSchema = z.object({
   check_out_time: z.string().optional(),
   is_wfh: z.boolean().default(false),
   reason: z.string().min(5, 'Please provide a reason'),
+}).superRefine((data, ctx) => {
+  if (data.check_in_time && new Date(data.check_in_time) > new Date()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Cannot be in the future', path: ['check_in_time'] })
+  }
+  if (data.check_out_time && new Date(data.check_out_time) > new Date()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Cannot be in the future', path: ['check_out_time'] })
+  }
 })
 export type ManualAttendanceForm = z.infer<typeof manualAttendanceSchema>

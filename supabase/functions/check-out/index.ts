@@ -1,7 +1,7 @@
 import { getActor, assertRole } from '../_shared/auth.ts'
 import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
-import { resolveShift } from '../_shared/shift.ts'
+import { getEffectiveTimes, resolveShift } from '../_shared/shift.ts'
 import { checkDrift, checkGeofence } from '../_shared/geo.ts'
 import { computeStatus, getISTMinutes, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
 import { isHoliday, isWeeklyOff } from '../_shared/holiday.ts'
@@ -36,7 +36,8 @@ Deno.serve(async (req: Request) => {
     const shift = await resolveShift(actor.actorId, today)
 
     // Early checkout validation — compare IST minutes
-    const [eh, em] = shift.end_time.split(':').map(Number)
+    const effectiveEnd = getEffectiveTimes(shift, today).end_time
+    const [eh, em] = effectiveEnd.split(':').map(Number)
     const checkoutMinutes = getISTMinutes(now)
     const endMinutes = eh * 60 + em
     const isEarly = checkoutMinutes < endMinutes

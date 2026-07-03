@@ -103,6 +103,9 @@ function ShiftDialog({
   )
   const [nightShift, setNightShift] = useState(editingShift?.is_night_shift ?? false)
   const [lateThreshold, setLateThreshold] = useState(String(editingShift?.late_mark_threshold ?? 3))
+  const [satEnabled, setSatEnabled] = useState(!!editingShift?.saturday_start_time)
+  const [satStartTime, setSatStartTime] = useState(editingShift?.saturday_start_time ?? '10:00')
+  const [satEndTime, setSatEndTime] = useState(editingShift?.saturday_end_time ?? '16:00')
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -115,6 +118,8 @@ function ShiftDialog({
         weekly_off_days: weeklyOff.map(Number),
         is_night_shift: nightShift,
         late_mark_threshold: parseInt(lateThreshold),
+        saturday_start_time: satEnabled ? satStartTime : null,
+        saturday_end_time: satEnabled ? satEndTime : null,
       }
       if (editingShift) {
         const { error } = await supabase.from('shifts').update(payload).eq('id', editingShift.id)
@@ -154,6 +159,22 @@ function ShiftDialog({
               <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <Switch checked={satEnabled} onCheckedChange={setSatEnabled} />
+            <Label>Different timings on Saturday</Label>
+          </div>
+          {satEnabled && (
+            <div className="grid grid-cols-2 gap-4 pl-6 border-l-2 border-primary/20">
+              <div className="space-y-2">
+                <Label>Saturday Start Time</Label>
+                <Input type="time" value={satStartTime} onChange={(e) => setSatStartTime(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Saturday End Time</Label>
+                <Input type="time" value={satEndTime} onChange={(e) => setSatEndTime(e.target.value)} required />
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Grace Period (min)</Label>
@@ -517,6 +538,12 @@ export default function ShiftsPage() {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div><span className="text-muted-foreground">Start:</span> {shift.start_time}</div>
                     <div><span className="text-muted-foreground">End:</span> {shift.end_time}</div>
+                    {shift.saturday_start_time && (
+                      <>
+                        <div><span className="text-muted-foreground">Sat start:</span> {shift.saturday_start_time}</div>
+                        <div><span className="text-muted-foreground">Sat end:</span> {shift.saturday_end_time}</div>
+                      </>
+                    )}
                     <div><span className="text-muted-foreground">Grace:</span> {shift.grace_period_minutes}min</div>
                     <div><span className="text-muted-foreground">Break:</span> {shift.break_minutes}min</div>
                     <div><span className="text-muted-foreground">Night:</span> {shift.is_night_shift ? 'Yes' : 'No'}</div>

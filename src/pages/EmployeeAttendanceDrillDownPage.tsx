@@ -124,10 +124,12 @@ export default function EmployeeAttendanceDrillDownPage() {
                   <div className="space-y-2">
                     <Label>Check-in</Label>
                     <Input type="datetime-local" {...form.register('check_in_time')} />
+                    {form.formState.errors.check_in_time && <p className="text-xs text-red-500">{form.formState.errors.check_in_time.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label>Check-out</Label>
                     <Input type="datetime-local" {...form.register('check_out_time')} />
+                    {form.formState.errors.check_out_time && <p className="text-xs text-red-500">{form.formState.errors.check_out_time.message}</p>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

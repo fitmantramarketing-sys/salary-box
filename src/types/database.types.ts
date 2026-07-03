@@ -1398,6 +1398,8 @@ export type Database = {
           is_night_shift: boolean
           late_mark_threshold: number
           name: string
+          saturday_end_time: string | null
+          saturday_start_time: string | null
           start_time: string
           updated_at: string
           weekly_off_days: number[]
@@ -1413,6 +1415,8 @@ export type Database = {
           is_night_shift?: boolean
           late_mark_threshold?: number
           name: string
+          saturday_end_time?: string | null
+          saturday_start_time?: string | null
           start_time: string
           updated_at?: string
           weekly_off_days?: number[]
@@ -1428,6 +1432,8 @@ export type Database = {
           is_night_shift?: boolean
           late_mark_threshold?: number
           name?: string
+          saturday_end_time?: string | null
+          saturday_start_time?: string | null
           start_time?: string
           updated_at?: string
           weekly_off_days?: number[]
@@ -1439,14 +1445,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_employee_name: {
+        Args: { p_id: string }
+        Returns: {
+          first_name: string
+          id: string
+          last_name: string
+        }[]
+      }
       get_my_employee_id: { Args: never; Returns: string }
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
-      }
-      get_employee_name: {
-        Args: { p_id: string }
-        Returns: { id: string; first_name: string; last_name: string }
       }
       uuid_generate_v5: {
         Args: { name: string; namespace: string }

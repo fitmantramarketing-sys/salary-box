@@ -5,12 +5,22 @@ export type ShiftInfo = {
   name: string
   start_time: string
   end_time: string
+  saturday_start_time: string | null
+  saturday_end_time: string | null
   total_hours: number
   weekly_off_days: number[]
   late_mark_threshold: number
   grace_period_minutes: number
   break_minutes: number
   is_night_shift: boolean
+}
+
+export function getEffectiveTimes(shift: ShiftInfo, date: string): { start_time: string; end_time: string } {
+  const dayOfWeek = new Date(date + 'T00:00:00+05:30').getDay()
+  if (dayOfWeek === 6 && shift.saturday_start_time && shift.saturday_end_time) {
+    return { start_time: shift.saturday_start_time, end_time: shift.saturday_end_time }
+  }
+  return { start_time: shift.start_time, end_time: shift.end_time }
 }
 
 export async function resolveShift(employeeId: string, date: string): Promise<ShiftInfo> {

@@ -26,6 +26,14 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const now = new Date()
+    if (check_in_time && new Date(check_in_time) > now) {
+      throw { code: 'VALIDATION_ERROR', message: 'Check-in time cannot be in the future.', status: 400 }
+    }
+    if (check_out_time && new Date(check_out_time) > now) {
+      throw { code: 'VALIDATION_ERROR', message: 'Check-out time cannot be in the future.', status: 400 }
+    }
+
     const supabase = getServiceClient()
     const shift = await resolveShift(employee_id, date)
 

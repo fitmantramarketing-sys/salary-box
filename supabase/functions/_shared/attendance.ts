@@ -1,4 +1,4 @@
-import type { ShiftInfo } from './shift.ts'
+import { getEffectiveTimes, type ShiftInfo } from './shift.ts'
 
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
 
@@ -95,9 +95,14 @@ export function computeStatus(
     return { status: 'absent', total_hours: null, is_late: false }
   }
 
+  // Resolve effective start/end for the day (Saturday may differ)
+  const effective = getEffectiveTimes(shift, record.date)
+  const effectiveStart = effective.start_time
+  const effectiveEnd = effective.end_time
+
   // Minutes past shift start (negative = before shift)
   const checkInMinutes = getISTMinutes(record.check_in_time)
-  const [sh, sm] = shift.start_time.split(':').map(Number)
+  const [sh, sm] = effectiveStart.split(':').map(Number)
   const shiftStartMinutes = sh * 60 + sm
   const diffMin = checkInMinutes - shiftStartMinutes
 
@@ -111,13 +116,13 @@ export function computeStatus(
       record.check_out_time,
       shift.break_minutes,
       shift.is_night_shift,
-      shift.end_time
+      effectiveEnd
     )
   }
 
   // Rules:
   //   Before shift start  → present
-  //   0–5 min after start → present + late
+  //   0–5 min after start → present (no late mark)
   //   5–20 min after      → half_day + late
   //   >20 min after       → absent + late
 
@@ -128,7 +133,7 @@ export function computeStatus(
 
   if (diffMin <= 5) {
     const s = record.is_wfh ? 'work_from_home' : 'present'
-    return { status: s, total_hours: totalHours, is_late: true }
+    return { status: s, total_hours: totalHours, is_late: false }
   }
 
   if (diffMin <= 20) {
