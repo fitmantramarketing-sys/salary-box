@@ -15,9 +15,13 @@ export type ShiftInfo = {
   is_night_shift: boolean
 }
 
+export function getDayOfWeek(date: string): number {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay()
+}
+
 export function getEffectiveTimes(shift: ShiftInfo, date: string): { start_time: string; end_time: string } {
-  const dayOfWeek = new Date(date + 'T00:00:00+05:30').getDay()
-  if (dayOfWeek === 6 && shift.saturday_start_time && shift.saturday_end_time) {
+  if (getDayOfWeek(date) === 6 && shift.saturday_start_time && shift.saturday_end_time) {
     return { start_time: shift.saturday_start_time, end_time: shift.saturday_end_time }
   }
   return { start_time: shift.start_time, end_time: shift.end_time }

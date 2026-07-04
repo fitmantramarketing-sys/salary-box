@@ -1,5 +1,5 @@
 import { getServiceClient } from './supabase.ts'
-import type { ShiftInfo } from './shift.ts'
+import { getDayOfWeek, type ShiftInfo } from './shift.ts'
 
 export async function isHoliday(
   employeeId: string,
@@ -30,7 +30,5 @@ export async function isHoliday(
 }
 
 export function isWeeklyOff(shift: ShiftInfo, date: string): boolean {
-  const dt = new Date(date + 'T00:00:00+05:30')
-  const dayOfWeek = dt.getDay()
-  return shift.weekly_off_days.includes(dayOfWeek)
+  return shift.weekly_off_days.includes(getDayOfWeek(date))
 }
