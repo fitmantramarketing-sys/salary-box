@@ -22,10 +22,11 @@ Deno.serve(async (req: Request) => {
 
     const { data: incomplete } = await supabase
       .from('attendance_records')
-      .select('id, employee_id, check_in_time, shift_id, status, employees!attendance_records_employee_id_fkey(email)')
+      .select('id, employee_id, check_in_time, shift_id, status, employees!attendance_records_employee_id_fkey!inner(email, role)')
       .eq('date', today)
       .not('check_in_time', 'is', null)
       .is('check_out_time', null)
+      .neq('employees.role', 'owner')
 
     if (!incomplete || incomplete.length === 0) {
       return ok({ processed: 0 })

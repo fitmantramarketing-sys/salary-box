@@ -17,24 +17,23 @@ Deno.serve(async (req: Request) => {
 
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || ''
 
-    const ipCheck = await checkIpWhitelist(clientIp)
-    if (!ipCheck.allowed) {
-      throw { code: 'FORBIDDEN', message: ipCheck.message, status: 403 }
-    }
-
     const today = new Date().toISOString().slice(0, 10)
     const supabase = getServiceClient()
     const shift = await resolveShift(actor.actorId, today)
 
-    // Geofence enforcement — hard block if outside any active geofence
-    // Owner bypasses for flexibility
+    // Geolocation & geofence enforcement
+    // Owner bypasses entirely for flexibility
     if (actor.actorRole !== 'owner') {
       if (latitude == null || longitude == null) {
-        throw { code: 'LOCATION_REQUIRED', message: 'Location access is required for check-in. Please enable GPS.', status: 403 }
-      }
-      const geoCheck = await checkGeofence(Number(latitude), Number(longitude))
-      if (!geoCheck.inside) {
-        throw { code: 'FORBIDDEN', message: 'Check-in location is outside the allowed geofence area.', status: 403 }
+        const ipCheck = await checkIpWhitelist(clientIp)
+        if (!ipCheck.allowed) {
+          throw { code: 'LOCATION_REQUIRED', message: 'Location access is required for check-in. Please enable GPS.', status: 403 }
+        }
+      } else {
+        const geoCheck = await checkGeofence(Number(latitude), Number(longitude))
+        if (!geoCheck.inside) {
+          throw { code: 'FORBIDDEN', message: 'Check-in location is outside the allowed geofence area.', status: 403 }
+        }
       }
     }
 

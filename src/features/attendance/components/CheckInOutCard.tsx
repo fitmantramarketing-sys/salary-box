@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTodayAttendance } from '../hooks'
 import { useCheckIn, useCheckOut, useLogWFH } from '../mutations'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, Clock, LogOut, Home, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { formatHours, getCurrentPosition } from '../utils'
+import { formatHours, getCurrentPosition, checkNetwork } from '../utils'
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,24 @@ export function CheckInOutCard() {
   const [earlyCheckoutOpen, setEarlyCheckoutOpen] = useState(false)
   const [earlyCheckoutReason, setEarlyCheckoutReason] = useState('')
   const [wfhDialogOpen, setWfhDialogOpen] = useState(false)
+
+  // Auto check-in when on whitelisted office network
+  const autoCheckInAttempted = useRef(false)
+  useEffect(() => {
+    if (isLoading || !today || today.check_in_time || autoCheckInAttempted.current) return
+    autoCheckInAttempted.current = true
+    ;(async () => {
+      try {
+        const whitelisted = await checkNetwork()
+        if (!whitelisted) return
+        await checkIn.mutateAsync({})
+        toast.success('Auto checked in (office network)')
+        refetch()
+      } catch {
+        // silent — user can tap the button
+      }
+    })()
+  }, [isLoading, today, checkIn, refetch])
 
   const handleCheckIn = async () => {
     try {

@@ -3,6 +3,7 @@ import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { getEffectiveTimes, resolveShift } from '../_shared/shift.ts'
 import { checkDrift, checkGeofence } from '../_shared/geo.ts'
+import { checkIpWhitelist } from '../_shared/ip.ts'
 import { computeStatus, getISTMinutes, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
 import { isHoliday, isWeeklyOff } from '../_shared/holiday.ts'
 
@@ -13,6 +14,8 @@ Deno.serve(async (req: Request) => {
     const actor = await getActor(req)
     assertRole(actor, ['owner', 'hr', 'employee'])
     const { latitude, longitude, early_checkout_reason } = await req.json().catch(() => ({}))
+
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || ''
 
     const today = new Date().toISOString().slice(0, 10)
     const supabase = getServiceClient()
@@ -70,15 +73,19 @@ Deno.serve(async (req: Request) => {
       woffFlag
     )
 
-    // Geofence enforcement — hard block if outside any active geofence
-    // Owner bypasses for flexibility
+    // Geolocation & geofence enforcement
+    // Owner bypasses entirely for flexibility
     if (actor.actorRole !== 'owner') {
       if (latitude == null || longitude == null) {
-        throw { code: 'LOCATION_REQUIRED', message: 'Location access is required for check-out. Please enable GPS.', status: 403 }
-      }
-      const geoCheck = await checkGeofence(Number(latitude), Number(longitude))
-      if (!geoCheck.inside) {
-        throw { code: 'FORBIDDEN', message: 'Check-out location is outside the allowed geofence area.', status: 403 }
+        const ipCheck = await checkIpWhitelist(clientIp)
+        if (!ipCheck.allowed) {
+          throw { code: 'LOCATION_REQUIRED', message: 'Location access is required for check-out. Please enable GPS.', status: 403 }
+        }
+      } else {
+        const geoCheck = await checkGeofence(Number(latitude), Number(longitude))
+        if (!geoCheck.inside) {
+          throw { code: 'FORBIDDEN', message: 'Check-out location is outside the allowed geofence area.', status: 403 }
+        }
       }
     }
 

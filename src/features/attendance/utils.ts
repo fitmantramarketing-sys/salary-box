@@ -1,3 +1,15 @@
+import { callEdgeFunction } from '@/lib/edge'
+import type { AttendanceStatus } from './types'
+
+export async function checkNetwork(): Promise<boolean> {
+  try {
+    const result = await callEdgeFunction<Record<string, never>, { whitelisted: boolean }>('check-network', {})
+    return result.whitelisted
+  } catch {
+    return false
+  }
+}
+
 export function getCurrentPosition(): Promise<{ latitude: number; longitude: number }> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -18,8 +30,6 @@ export function getCurrentPosition(): Promise<{ latitude: number; longitude: num
     )
   })
 }
-
-import type { AttendanceStatus } from './types'
 
 export function getAttendanceStatusLabel(status: AttendanceStatus): string {
   const labels: Record<NonNullable<AttendanceStatus>, string> = {

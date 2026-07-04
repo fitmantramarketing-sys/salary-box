@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useRole } from '@/hooks/useRole'
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Loader2, Users, Clock, Calendar, CheckCircle2, AlertTriangle, ArrowRight, Home } from 'lucide-react'
 import { useCheckIn, useCheckOut, useLogWFH } from '@/features/attendance/mutations'
-import { getCurrentPosition } from '@/features/attendance/utils'
+import { getCurrentPosition, checkNetwork } from '@/features/attendance/utils'
 import {
   Dialog,
   DialogContent,
@@ -154,6 +154,24 @@ function HRDashboard() {
   const [earlyCheckoutOpen, setEarlyCheckoutOpen] = useState(false)
   const [earlyCheckoutReason, setEarlyCheckoutReason] = useState('')
   const [wfhDialogOpen, setWfhDialogOpen] = useState(false)
+
+  // Auto check-in when on whitelisted office network
+  const autoCheckInAttempted = useRef(false)
+  useEffect(() => {
+    if (isLoading || !dashboard || dashboard?.todayAttendance?.check_in_time || autoCheckInAttempted.current) return
+    autoCheckInAttempted.current = true
+    ;(async () => {
+      try {
+        const whitelisted = await checkNetwork()
+        if (!whitelisted) return
+        await checkIn.mutateAsync({})
+        toast.success('Auto checked in (office network)')
+        refetch()
+      } catch {
+        // silent
+      }
+    })()
+  }, [isLoading, dashboard, checkIn, refetch])
 
   const handleCheckIn = async () => {
     try {
@@ -359,6 +377,24 @@ function EmployeeDashboardView() {
   const [earlyCheckoutOpen, setEarlyCheckoutOpen] = useState(false)
   const [earlyCheckoutReason, setEarlyCheckoutReason] = useState('')
   const [wfhDialogOpen, setWfhDialogOpen] = useState(false)
+
+  // Auto check-in when on whitelisted office network
+  const autoCheckInAttempted = useRef(false)
+  useEffect(() => {
+    if (isLoading || !dashboard || dashboard?.todayAttendance?.check_in_time || autoCheckInAttempted.current) return
+    autoCheckInAttempted.current = true
+    ;(async () => {
+      try {
+        const whitelisted = await checkNetwork()
+        if (!whitelisted) return
+        await checkIn.mutateAsync({})
+        toast.success('Auto checked in (office network)')
+        refetch()
+      } catch {
+        // silent
+      }
+    })()
+  }, [isLoading, dashboard, checkIn, refetch])
 
   const handleCheckIn = async () => {
     try {

@@ -19,6 +19,7 @@ Deno.serve(async (req: Request) => {
       .from('employees')
       .select('id, email')
       .eq('is_active', true)
+      .neq('role', 'owner')
 
     if (!employees || employees.length === 0) {
       return ok({ processed: 0 })
