@@ -84,6 +84,15 @@ export default function EmployeeAttendanceDrillDownPage() {
     return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
   }
 
+  if (employee?.role === 'owner') {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+        <p className="text-lg font-medium">Attendance not tracked for this user</p>
+        <p className="text-sm">Owner attendance data is not available.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

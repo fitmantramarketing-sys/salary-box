@@ -49,7 +49,6 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Attendance',
     icon: Clock,
     children: [
-      { label: 'My Attendance', href: '/attendance', roles: ['owner', 'hr', 'employee'] },
       { label: 'Team Attendance', href: '/attendance/team', roles: ['owner', 'hr'] },
       { label: 'Regularization', href: '/attendance/regularization', roles: ['owner', 'hr', 'employee'] },
     ],

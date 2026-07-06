@@ -202,7 +202,9 @@ export default function App() {
               <Route path="/employees/:id" element={<EmployeeDetailPage />} />
 
               {/* Attendance */}
-              <Route path="/attendance" element={<AttendancePage />} />
+              <Route element={<RequireRole allow={['hr', 'employee']} />}>
+                <Route path="/attendance" element={<AttendancePage />} />
+              </Route>
               <Route element={<RequireRole allow={['owner', 'hr']} />}>
                 <Route path="/attendance/team" element={<TeamAttendancePage />} />
                 <Route path="/attendance/:employeeId" element={<EmployeeAttendanceDrillDownPage />} />
@@ -227,7 +229,6 @@ export default function App() {
               </Route>
               <Route element={<RequireRole allow={['owner', 'hr']} />}>
                 <Route path="/settings/shifts" element={<ShiftsPage />} />
-                <Route path="/settings/holidays" element={<HolidayCalendarPage />} />
               </Route>
               <Route element={<RequireRole allow={['owner', 'system_admin']} />}>
                 <Route path="/settings/ip-whitelist" element={<IPWhitelistPage />} />

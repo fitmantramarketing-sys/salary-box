@@ -85,6 +85,7 @@ export async function fetchAttendanceReport(
     .from('employees')
     .select('id, first_name, last_name, employee_code, department:departments!department_id(name)')
     .eq('is_active', true)
+    .neq('role', 'owner')
     .order('first_name')
 
   if (departmentId) {
@@ -154,7 +155,8 @@ export async function fetchHeatmapData(
     supabase
       .from('employees')
       .select('id, department_id')
-      .eq('is_active', true),
+      .eq('is_active', true)
+      .neq('role', 'owner'),
     supabase
       .from('attendance_records')
       .select('employee_id, date, status')
@@ -310,6 +312,7 @@ export async function fetchDailyAttendance(date: string): Promise<DailyAttendanc
       .from('employees')
       .select('id, first_name, last_name, employee_code, department:departments!department_id(name)')
       .eq('is_active', true)
+      .neq('role', 'owner')
       .order('first_name'),
     supabase
       .from('attendance_records')

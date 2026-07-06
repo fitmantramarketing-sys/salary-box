@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Loader2, Users, Clock, Calendar, CheckCircle2, AlertTriangle, ArrowRight, Home } from 'lucide-react'
+import { Loader2, Users, Clock, Calendar, CheckCircle2, ArrowRight, Home, BarChart3 } from 'lucide-react'
 import { useCheckIn, useCheckOut, useLogWFH } from '@/features/attendance/mutations'
 import { getCurrentPosition, getCurrentPositionQuick } from '@/features/attendance/utils'
 import {
@@ -120,7 +120,7 @@ function OwnerDashboard() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium">Reports</CardTitle>
-          <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          <BarChart3 className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent className="space-y-2">
           <Link to="/reports/attendance" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
@@ -128,6 +128,12 @@ function OwnerDashboard() {
           </Link>
           <Link to="/reports/daily" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
             Daily Attendance <ArrowRight className="h-3 w-3" />
+          </Link>
+          <Link to="/reports/leave" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+            Leave Report <ArrowRight className="h-3 w-3" />
+          </Link>
+          <Link to="/reports/headcount" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+            Headcount <ArrowRight className="h-3 w-3" />
           </Link>
         </CardContent>
       </Card>

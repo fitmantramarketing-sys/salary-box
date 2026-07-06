@@ -16,16 +16,23 @@ import { EmployeeActivityTab } from './EmployeeActivityTab'
 
 type Props = { employeeId: string }
 
-const ADMIN_TABS = [
-  { value: 'overview', label: 'Overview' },
-  { value: 'documents', label: 'Documents' },
-  { value: 'bank_details', label: 'Bank Details' },
-  { value: 'lifecycle', label: 'Lifecycle' },
-  { value: 'activity', label: 'Activity' },
-  { value: 'attendance', label: 'Attendance' },
-  { value: 'leave', label: 'Leave' },
-  { value: 'onboarding', label: 'Onboarding' },
-] as const
+function getAdminTabs(employeeRole?: string) {
+  const tabs: { value: string; label: string }[] = [
+    { value: 'overview', label: 'Overview' },
+    { value: 'documents', label: 'Documents' },
+    { value: 'bank_details', label: 'Bank Details' },
+    { value: 'lifecycle', label: 'Lifecycle' },
+    { value: 'activity', label: 'Activity' },
+  ]
+  if (employeeRole !== 'owner') {
+    tabs.push({ value: 'attendance', label: 'Attendance' })
+  }
+  tabs.push(
+    { value: 'leave', label: 'Leave' },
+    { value: 'onboarding', label: 'Onboarding' },
+  )
+  return tabs
+}
 
 const SELF_TABS = [
   { value: 'overview', label: 'My Profile' },
@@ -44,7 +51,8 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
 
   const isOwnProfile = currentEmployee?.id === employeeId
   const canViewAll = isOwner || isHR || isSystemAdmin
-  const tabs = isOwnProfile && !canViewAll ? SELF_TABS : ADMIN_TABS
+  const adminTabs = getAdminTabs(employee?.role)
+  const tabs = isOwnProfile && !canViewAll ? SELF_TABS : adminTabs
 
   if (isLoading) {
     return (
@@ -111,7 +119,7 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
         </TabsContent>
       )}
 
-      {canViewAll && (
+      {canViewAll && employee?.role !== 'owner' && (
         <TabsContent value="attendance">
           <EmployeeAttendanceTab employeeId={employeeId} />
         </TabsContent>

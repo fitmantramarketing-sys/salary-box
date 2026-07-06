@@ -23,6 +23,7 @@ async function fetchTeamAttendance(year: number, month: number) {
       .from('employees')
       .select('id, first_name, last_name, employee_code, department:departments!department_id(name)')
       .eq('is_active', true)
+      .neq('role', 'owner')
       .order('first_name'),
     supabase
       .from('attendance_records')
