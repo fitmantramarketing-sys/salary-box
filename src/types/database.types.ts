@@ -1386,6 +1386,41 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string
+          employee_id: string
+          endpoint: string
+          id: string
+          p256dh_key: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          employee_id: string
+          endpoint: string
+          id?: string
+          p256dh_key: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          employee_id?: string
+          endpoint?: string
+          id?: string
+          p256dh_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shifts: {
         Row: {
           break_minutes: number

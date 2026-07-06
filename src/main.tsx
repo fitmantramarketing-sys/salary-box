@@ -6,11 +6,14 @@ import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from 'next-themes'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient.ts'
+import { registerPushSubscription } from './features/notifications/push.ts'
 import './index.css'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('/sw.js').then(() => {
+      registerPushSubscription()
+    })
   })
 }
 
