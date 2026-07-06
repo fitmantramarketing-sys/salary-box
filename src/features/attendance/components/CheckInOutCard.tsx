@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, Clock, LogOut, Home, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { formatHours, getCurrentPosition, checkNetwork } from '../utils'
+import { formatHours, getCurrentPosition, getCurrentPositionQuick } from '../utils'
 import {
   Dialog,
   DialogContent,
@@ -27,17 +27,17 @@ export function CheckInOutCard() {
   const [earlyCheckoutReason, setEarlyCheckoutReason] = useState('')
   const [wfhDialogOpen, setWfhDialogOpen] = useState(false)
 
-  // Auto check-in when on whitelisted office network
+  // Auto check-in when GPS shows we're inside the office geofence
   const autoCheckInAttempted = useRef(false)
   useEffect(() => {
     if (isLoading || !today || today.check_in_time || autoCheckInAttempted.current) return
     autoCheckInAttempted.current = true
     ;(async () => {
       try {
-        const whitelisted = await checkNetwork()
-        if (!whitelisted) return
-        await checkIn.mutateAsync({})
-        toast.success('Auto checked in (office network)')
+        const coords = await getCurrentPositionQuick()
+        if (!coords) return
+        await checkIn.mutateAsync(coords)
+        toast.success('Auto checked in')
         refetch()
       } catch {
         // silent — user can tap the button

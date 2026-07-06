@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Loader2, Users, Clock, Calendar, CheckCircle2, AlertTriangle, ArrowRight, Home } from 'lucide-react'
 import { useCheckIn, useCheckOut, useLogWFH } from '@/features/attendance/mutations'
-import { getCurrentPosition, checkNetwork } from '@/features/attendance/utils'
+import { getCurrentPosition, getCurrentPositionQuick } from '@/features/attendance/utils'
 import {
   Dialog,
   DialogContent,
@@ -155,17 +155,17 @@ function HRDashboard() {
   const [earlyCheckoutReason, setEarlyCheckoutReason] = useState('')
   const [wfhDialogOpen, setWfhDialogOpen] = useState(false)
 
-  // Auto check-in when on whitelisted office network
+  // Auto check-in when GPS shows we're inside the office geofence
   const autoCheckInAttempted = useRef(false)
   useEffect(() => {
     if (isLoading || !dashboard || dashboard?.todayAttendance?.check_in_time || autoCheckInAttempted.current) return
     autoCheckInAttempted.current = true
     ;(async () => {
       try {
-        const whitelisted = await checkNetwork()
-        if (!whitelisted) return
-        await checkIn.mutateAsync({})
-        toast.success('Auto checked in (office network)')
+        const coords = await getCurrentPositionQuick()
+        if (!coords) return
+        await checkIn.mutateAsync(coords)
+        toast.success('Auto checked in')
         refetch()
       } catch {
         // silent
@@ -378,17 +378,17 @@ function EmployeeDashboardView() {
   const [earlyCheckoutReason, setEarlyCheckoutReason] = useState('')
   const [wfhDialogOpen, setWfhDialogOpen] = useState(false)
 
-  // Auto check-in when on whitelisted office network
+  // Auto check-in when GPS shows we're inside the office geofence
   const autoCheckInAttempted = useRef(false)
   useEffect(() => {
     if (isLoading || !dashboard || dashboard?.todayAttendance?.check_in_time || autoCheckInAttempted.current) return
     autoCheckInAttempted.current = true
     ;(async () => {
       try {
-        const whitelisted = await checkNetwork()
-        if (!whitelisted) return
-        await checkIn.mutateAsync({})
-        toast.success('Auto checked in (office network)')
+        const coords = await getCurrentPositionQuick()
+        if (!coords) return
+        await checkIn.mutateAsync(coords)
+        toast.success('Auto checked in')
         refetch()
       } catch {
         // silent
