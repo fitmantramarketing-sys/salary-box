@@ -2,7 +2,6 @@ import { getActor, assertRole } from '../_shared/auth.ts'
 import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { resolveShift } from '../_shared/shift.ts'
-import { isHoliday, isWeeklyOff } from '../_shared/holiday.ts'
 import {
   computeStatus,
   type AttendanceRecordForCompute,
@@ -37,9 +36,6 @@ Deno.serve(async (req: Request) => {
     const supabase = getServiceClient()
     const shift = await resolveShift(employee_id, date)
 
-    const holidayFlag = await isHoliday(employee_id, date)
-    const woffFlag = isWeeklyOff(shift, date)
-
     const rec: AttendanceRecordForCompute = {
       employee_id,
       date,
@@ -52,7 +48,8 @@ Deno.serve(async (req: Request) => {
       is_manually_entered: true,
     }
 
-    const result = computeStatus(rec, shift, holidayFlag, woffFlag)
+    // Don't pass holiday/weekly off flag — admin manual entry overrides these
+    const result = computeStatus(rec, shift, false, false)
 
     const payload: Record<string, unknown> = {
       employee_id,

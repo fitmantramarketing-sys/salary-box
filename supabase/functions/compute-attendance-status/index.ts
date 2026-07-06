@@ -40,9 +40,6 @@ Deno.serve(async (req: Request) => {
       const holidayFlag = await isHoliday(emp.id, today)
       const woffFlag = isWeeklyOff(shift, today)
 
-      // Skip non-working days (no record needed)
-      if (holidayFlag || woffFlag) continue
-
       // Check for existing attendance record
       const { data: existing } = await supabase
         .from('attendance_records')
@@ -50,6 +47,16 @@ Deno.serve(async (req: Request) => {
         .eq('employee_id', emp.id)
         .eq('date', today)
         .maybeSingle()
+
+      // Skip non-working days (no record needed)
+      if (holidayFlag || woffFlag) {
+        // Clean up any existing records on non-working days (created by buggy EF versions)
+        if (existing) {
+          await supabase.from('attendance_records').delete().eq('id', existing.id)
+          processed++
+        }
+        continue
+      }
 
       if (existing) {
         // If already checked out, recompute status for consistency

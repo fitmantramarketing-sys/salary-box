@@ -74,33 +74,54 @@ export default function App() {
         }
       } catch (err) {
         console.error('Failed to hydrate employee:', err)
+        clearAuth()
+        setLoading(false)
+        return null
       }
 
       // Auth user exists but no employee row — edge case (orphaned auth account)
       setLoading(false)
       return null
     },
-    [setAuth, setLoading]
+    [setAuth, setLoading, clearAuth]
   )
 
   useEffect(() => {
-    // 1. Check existing session on mount
-    supabase.auth
-      .getSession()
-      .then(async ({ data: { session } }) => {
-        if (session?.user) {
+    // 1. Check existing session on mount — force refresh to bypass stuck state machine
+    ;(async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.refreshSession()
+
+        if (!error && session?.user) {
           const employee = await hydrateEmployee(session.user)
+          if (employee?.is_first_login) {
+            navigate('/set-password', { replace: true })
+          }
+          return
+        }
+
+        // Refresh failed (expired/offline) — read localStorage fallback
+        const { data: { session: cached } } = await supabase.auth.getSession()
+        if (cached?.user) {
+          const employee = await hydrateEmployee(cached.user)
           if (employee?.is_first_login) {
             navigate('/set-password', { replace: true })
           }
         } else {
           setLoading(false)
         }
-      })
-      .catch((err) => {
-        console.error('getSession failed:', err)
-        setLoading(false)
-      })
+      } catch {
+        // Network error — last-resort localStorage fallback
+        try {
+          const { data: { session: cached } } = await supabase.auth.getSession()
+          if (cached?.user) {
+            await hydrateEmployee(cached.user)
+          }
+        } finally {
+          setLoading(false)
+        }
+      }
+    })()
 
     // 2. Listen for auth state changes
     const {
