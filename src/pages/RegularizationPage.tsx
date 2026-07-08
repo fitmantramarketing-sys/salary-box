@@ -10,6 +10,7 @@ import { useRegularizationHistory, useAppConfig } from '@/features/attendance/ho
 import { useSubmitRegularization } from '@/features/attendance/mutations'
 import { submitRegularizationSchema, type SubmitRegularizationForm } from '@/features/attendance/schemas'
 import { getAttendanceStatusLabel, formatHours } from '@/features/attendance/utils'
+import type { AttendanceStatus } from '@/features/attendance/types'
 import { useAuthStore } from '@/hooks/useAuth'
 import type { AttendanceRecord } from '@/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -61,7 +62,7 @@ async function fetchEarlyCheckouts() {
 async function fetchPendingReviews() {
   const { data, error } = await supabase
     .from('attendance_regularization_requests')
-    .select('*, employee:employees!employee_id(id, first_name, last_name, employee_code)')
+    .select('*, employee:employees!employee_id(id, first_name, last_name, employee_code), attendance_record:attendance_record_id(id, date, check_in_time, check_out_time, status, is_wfh, total_hours)')
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -75,6 +76,7 @@ async function fetchPendingReviews() {
     reason: string
     created_at: string
     employee: { id: string; first_name: string; last_name: string; employee_code: string } | null
+    attendance_record: { id: string; date: string; check_in_time: string | null; check_out_time: string | null; status: string; is_wfh: boolean; total_hours: number | null } | null
   }>
 }
 
@@ -440,11 +442,22 @@ function PendingReviewsTab() {
                         {req.employee?.first_name} {req.employee?.last_name}
                         <span className="text-muted-foreground font-normal"> ({req.employee?.employee_code})</span>
                       </p>
-                      <p>{req.reason}</p>
                       <p className="text-xs text-muted-foreground">
-                        Status: {req.requested_status}
-                        {req.requested_check_in && ` · Check-in: ${new Date(req.requested_check_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`}
-                        {req.requested_check_out && ` · Check-out: ${new Date(req.requested_check_out).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`}
+                        <strong>Date:</strong> {req.attendance_record?.date ?? '—'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Current:</strong> {getAttendanceStatusLabel((req.attendance_record?.status ?? '') as AttendanceStatus)}
+                        {req.attendance_record?.check_in_time && ` · In: ${new Date(req.attendance_record.check_in_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`}
+                        {req.attendance_record?.check_out_time && ` · Out: ${new Date(req.attendance_record.check_out_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`}
+                        {req.attendance_record?.total_hours != null && ` · ${formatHours(req.attendance_record.total_hours)}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Requested:</strong> {req.requested_status}
+                        {req.requested_check_in && ` · In: ${new Date(req.requested_check_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`}
+                        {req.requested_check_out && ` · Out: ${new Date(req.requested_check_out).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Reason:</strong> {req.reason}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Submitted: {new Date(req.created_at).toLocaleDateString('en-IN')}
