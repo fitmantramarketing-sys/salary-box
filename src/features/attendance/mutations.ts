@@ -41,3 +41,15 @@ export function useSubmitRegularization() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['attendance'] }),
   })
 }
+
+export function useWithdrawRegularization() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (request_id: string) =>
+      callEdgeFunction<{ request_id: string }, { request_id: string; status: string }>(
+        'withdraw-regularization',
+        { request_id }
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['attendance'] }),
+  })
+}

@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { callEdgeFunction } from '@/lib/edge'
 import { fetchAttendanceRecordByDate } from '@/features/attendance/api'
 import { useRegularizationHistory, useAppConfig } from '@/features/attendance/hooks'
-import { useSubmitRegularization } from '@/features/attendance/mutations'
+import { useSubmitRegularization, useWithdrawRegularization } from '@/features/attendance/mutations'
 import { submitRegularizationSchema, type SubmitRegularizationForm } from '@/features/attendance/schemas'
 import { getAttendanceStatusLabel, formatHours } from '@/features/attendance/utils'
 import type { AttendanceStatus } from '@/features/attendance/types'
@@ -249,14 +249,30 @@ function NewRequestDialog() {
 
 function MyRequestsTab() {
   const { data: requests, isLoading } = useRegularizationHistory()
+  const withdraw = useWithdrawRegularization()
+  const [withdrawing, setWithdrawing] = useState<string | null>(null)
 
   const statusBadge = (status: string) => {
     const variants: Record<string, string> = {
       pending: 'bg-yellow-100 text-yellow-800',
       approved: 'bg-green-100 text-green-800',
       rejected: 'bg-red-100 text-red-800',
+      withdrawn: 'bg-gray-100 text-gray-800',
     }
     return variants[status] ?? 'bg-gray-100 text-gray-800'
+  }
+
+  async function handleWithdraw(requestId: string) {
+    setWithdrawing(requestId)
+    try {
+      await withdraw.mutateAsync(requestId)
+      toast.success('Request withdrawn')
+    } catch (e: unknown) {
+      const err = e as { message?: string }
+      toast.error(err?.message ?? 'Failed to withdraw request')
+    } finally {
+      setWithdrawing(null)
+    }
   }
 
   return (
@@ -283,7 +299,20 @@ function MyRequestsTab() {
                     {req.reviewer_comment && ` · Review: ${req.reviewer_comment}`}
                   </p>
                 </div>
-                <Badge className={statusBadge(req.status)}>{req.status}</Badge>
+                <div className="flex items-center gap-2">
+                  {req.status === 'pending' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={withdrawing === req.id}
+                      onClick={() => handleWithdraw(req.id)}
+                    >
+                      {withdrawing === req.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                      Withdraw
+                    </Button>
+                  )}
+                  <Badge className={statusBadge(req.status)}>{req.status}</Badge>
+                </div>
               </div>
             ))}
           </div>

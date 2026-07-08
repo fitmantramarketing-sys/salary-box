@@ -1528,7 +1528,7 @@ export type Database = {
         | "resignation"
         | "termination"
         | "rehire"
-      regularization_status: "pending" | "approved" | "rejected"
+      regularization_status: "pending" | "approved" | "rejected" | "withdrawn"
       user_role: "owner" | "hr" | "employee" | "system_admin"
     }
     CompositeTypes: {
@@ -1692,7 +1692,7 @@ export const Constants = {
         "termination",
         "rehire",
       ],
-      regularization_status: ["pending", "approved", "rejected"],
+      regularization_status: ["pending", "approved", "rejected", "withdrawn"],
       user_role: ["owner", "hr", "employee", "system_admin"],
     },
   },
