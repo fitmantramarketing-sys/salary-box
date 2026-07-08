@@ -87,39 +87,45 @@ export default function App() {
   )
 
   useEffect(() => {
-    // 1. Check existing session on mount — force refresh to bypass stuck state machine
+    // 1. Check existing session on mount — use setSession() to reset the
+    //    supabase-js internal state machine, preventing the "stuck after idle" hang
     ;(async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.refreshSession()
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+        const projectRef = supabaseUrl?.match(/\/\/(.+?)\./)?.[1]
+        let tokens: { access_token: string; refresh_token: string } | null = null
 
-        if (!error && session?.user) {
-          const employee = await hydrateEmployee(session.user)
-          if (employee?.is_first_login) {
-            navigate('/set-password', { replace: true })
+        // Read stored tokens from localStorage (Supabase stores them under a
+        // project-specific key: sb-<project-ref>-auth-token)
+        if (projectRef) {
+          const stored = localStorage.getItem(`sb-${projectRef}-auth-token`)
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored)
+              if (parsed.access_token && parsed.refresh_token) {
+                tokens = { access_token: parsed.access_token, refresh_token: parsed.refresh_token }
+              }
+            } catch { /* ignore parse errors */ }
           }
-          return
         }
 
-        // Refresh failed (expired/offline) — read localStorage fallback
-        const { data: { session: cached } } = await supabase.auth.getSession()
-        if (cached?.user) {
-          const employee = await hydrateEmployee(cached.user)
-          if (employee?.is_first_login) {
-            navigate('/set-password', { replace: true })
+        if (tokens) {
+          // setSession() clears the corrupted in-memory state and rebuilds a
+          // fresh state machine from the stored tokens, then validates them
+          const { data: { session }, error } = await supabase.auth.setSession(tokens)
+
+          if (!error && session?.user) {
+            const employee = await hydrateEmployee(session.user)
+            if (employee?.is_first_login) {
+              navigate('/set-password', { replace: true })
+            }
+            return
           }
-        } else {
-          setLoading(false)
         }
+
+        setLoading(false)
       } catch {
-        // Network error — last-resort localStorage fallback
-        try {
-          const { data: { session: cached } } = await supabase.auth.getSession()
-          if (cached?.user) {
-            await hydrateEmployee(cached.user)
-          }
-        } finally {
-          setLoading(false)
-        }
+        setLoading(false)
       }
     })()
 
