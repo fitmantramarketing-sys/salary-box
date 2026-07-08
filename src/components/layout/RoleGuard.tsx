@@ -3,22 +3,28 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '@/hooks/useAuth'
 import type { Role } from '@/types'
 
-/**
- * RequireAuth — blocks unauthenticated access.
- * Shows a spinner while the session is loading.
- * If auth stays stuck for >10s, hard-reloads to nuke the corrupted supabase state machine.
- */
 export function RequireAuth() {
   const { user, isLoading } = useAuthStore()
 
   useEffect(() => {
-    if (!isLoading) return
-    // One-time hard reload per tab session to nuke corrupted supabase-js state machine.
-    // After the reload, the sessionStorage flag prevents a second reload.
-    const alreadyReloaded = sessionStorage.getItem('authFreshReload')
-    if (alreadyReloaded) return
-    sessionStorage.setItem('authFreshReload', '1')
-    window.location.reload()
+    if (!isLoading) {
+      // Auth resolved — clear reload counter so next cold open gets a retry
+      sessionStorage.removeItem('authReloadCount')
+      return
+    }
+
+    // Don't attempt more than 2 consecutive reloads in this tab session
+    if (Number(sessionStorage.getItem('authReloadCount') || '0') >= 2) return
+
+    // Wait 4 seconds for auth to settle; if still stuck, reload the page.
+    // This nukes any corrupted supabase-js internal state and starts fresh.
+    const timer = setTimeout(() => {
+      const count = Number(sessionStorage.getItem('authReloadCount') || '0')
+      sessionStorage.setItem('authReloadCount', String(count + 1))
+      window.location.reload()
+    }, 4000)
+
+    return () => clearTimeout(timer)
   }, [isLoading])
 
   if (isLoading) {
