@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/hooks/useAuth'
@@ -86,6 +86,8 @@ export default function App() {
     [setAuth, setLoading, clearAuth]
   )
 
+  const mountInitRef = useRef(true)
+
   useEffect(() => {
     // 1. Check existing session on mount — use setSession() to reset the
     //    supabase-js internal state machine, preventing the "stuck after idle" hang
@@ -115,6 +117,8 @@ export default function App() {
           const { data: { session }, error } = await supabase.auth.setSession(tokens)
 
           if (!error && session?.user) {
+            // Mark mount init as done so onAuthStateChange won't redirect again
+            mountInitRef.current = false
             const employee = await hydrateEmployee(session.user)
             if (employee?.is_first_login) {
               navigate('/set-password', { replace: true })
@@ -135,6 +139,11 @@ export default function App() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
         if (event === 'SIGNED_IN' && session?.user) {
+          // Skip the SIGNED_IN fired by our own mount setSession() call
+          if (mountInitRef.current) {
+            mountInitRef.current = false
+            return
+          }
           const employee = await hydrateEmployee(session.user)
           if (employee?.is_first_login) {
             navigate('/set-password', { replace: true })
