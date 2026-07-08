@@ -13,14 +13,12 @@ export function RequireAuth() {
 
   useEffect(() => {
     if (!isLoading) return
-    // Only auto-reload once per session to avoid infinite loops when offline
-    const reloadCount = Number(sessionStorage.getItem('authReloadCount') || '0')
-    if (reloadCount >= 1) return
-    const timer = setTimeout(() => {
-      sessionStorage.setItem('authReloadCount', String(reloadCount + 1))
-      window.location.reload()
-    }, 10_000)
-    return () => clearTimeout(timer)
+    // One-time hard reload per tab session to nuke corrupted supabase-js state machine.
+    // After the reload, the sessionStorage flag prevents a second reload.
+    const alreadyReloaded = sessionStorage.getItem('authFreshReload')
+    if (alreadyReloaded) return
+    sessionStorage.setItem('authFreshReload', '1')
+    window.location.reload()
   }, [isLoading])
 
   if (isLoading) {
