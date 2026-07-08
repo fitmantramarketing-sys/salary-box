@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/hooks/useAuth'
@@ -86,9 +86,13 @@ export default function App() {
     [setAuth, setLoading, clearAuth]
   )
 
-  const mountInitRef = useRef(true)
-
   useEffect(() => {
+    // Flag scoped to this effect run — each Strict Mode double-invoke gets its own.
+    // During mount init (setSession), all SIGNED_IN events are ignored so they
+    // don't trigger a stray navigate('/dashboard'). After mount init completes,
+    // subsequent SIGNED_IN events (from real logins) are handled normally.
+    let mountInitComplete = false
+
     // 1. Check existing session on mount — use setSession() to reset the
     //    supabase-js internal state machine, preventing the "stuck after idle" hang
     ;(async () => {
@@ -117,8 +121,6 @@ export default function App() {
           const { data: { session }, error } = await supabase.auth.setSession(tokens)
 
           if (!error && session?.user) {
-            // Mark mount init as done so onAuthStateChange won't redirect again
-            mountInitRef.current = false
             const employee = await hydrateEmployee(session.user)
             if (employee?.is_first_login) {
               navigate('/set-password', { replace: true })
@@ -130,6 +132,8 @@ export default function App() {
         setLoading(false)
       } catch {
         setLoading(false)
+      } finally {
+        mountInitComplete = true
       }
     })()
 
@@ -139,11 +143,8 @@ export default function App() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
         if (event === 'SIGNED_IN' && session?.user) {
-          // Skip the SIGNED_IN fired by our own mount setSession() call
-          if (mountInitRef.current) {
-            mountInitRef.current = false
-            return
-          }
+          // Ignore SIGNED_IN during mount init (from our own setSession call)
+          if (!mountInitComplete) return
           const employee = await hydrateEmployee(session.user)
           if (employee?.is_first_login) {
             navigate('/set-password', { replace: true })
