@@ -4,7 +4,7 @@ import { getServiceClient } from '../_shared/supabase.ts'
 import { resolveShift } from '../_shared/shift.ts'
 import { checkIpWhitelist } from '../_shared/ip.ts'
 import { checkGeofence } from '../_shared/geo.ts'
-import { computeStatus, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
+import { computeStatus, formatISTTime, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
 import { isHoliday, isWeeklyOff } from '../_shared/holiday.ts'
 import { createNotification } from '../_shared/notify.ts'
 
@@ -114,10 +114,7 @@ Deno.serve(async (req: Request) => {
       .eq('is_active', true)
 
     if (owners) {
-      const checkInTime = new Date(record.check_in_time).toLocaleString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+      const checkInTime = formatISTTime(record.check_in_time)
       for (const owner of owners) {
         if (owner.id === actor.actorId) continue
         await createNotification({

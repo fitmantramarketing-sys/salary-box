@@ -4,7 +4,7 @@ import { getServiceClient } from '../_shared/supabase.ts'
 import { getEffectiveTimes, resolveShift } from '../_shared/shift.ts'
 import { checkDrift, checkGeofence } from '../_shared/geo.ts'
 import { checkIpWhitelist } from '../_shared/ip.ts'
-import { computeStatus, getISTMinutes, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
+import { computeStatus, getISTMinutes, formatISTTime, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
 import { isHoliday, isWeeklyOff } from '../_shared/holiday.ts'
 import { createNotification } from '../_shared/notify.ts'
 
@@ -138,10 +138,7 @@ Deno.serve(async (req: Request) => {
       .eq('is_active', true)
 
     if (owners) {
-      const checkOutTime = new Date(updated.check_out_time).toLocaleString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+      const checkOutTime = formatISTTime(updated.check_out_time)
       const hours = typeof updated.total_hours === 'number'
         ? `${Math.floor(updated.total_hours)}h ${Math.round((updated.total_hours % 1) * 60)}m`
         : ''

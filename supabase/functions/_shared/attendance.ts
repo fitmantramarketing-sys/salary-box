@@ -8,6 +8,15 @@ export function getISTMinutes(utcIso: string): number {
   return ist.getUTCHours() * 60 + ist.getUTCMinutes()
 }
 
+/** Formats a UTC ISO timestamp to HH:MM IST for use in notifications. */
+export function formatISTTime(utcIso: string): string {
+  const d = new Date(utcIso)
+  const ist = new Date(d.getTime() + IST_OFFSET_MS)
+  const h = String(ist.getUTCHours()).padStart(2, '0')
+  const m = String(ist.getUTCMinutes()).padStart(2, '0')
+  return `${h}:${m}`
+}
+
 export function computeTotalHours(
   checkIn: string,
   checkOut: string,
