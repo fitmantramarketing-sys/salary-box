@@ -6,6 +6,7 @@ import { checkDrift, checkGeofence } from '../_shared/geo.ts'
 import { checkIpWhitelist } from '../_shared/ip.ts'
 import { computeStatus, getISTMinutes, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
 import { isHoliday, isWeeklyOff } from '../_shared/holiday.ts'
+import { createNotification } from '../_shared/notify.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -127,6 +128,32 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (updateError) throw updateError
+
+    // Notify all active owners of check-out
+    const { data: owners } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('role', 'owner')
+      .eq('is_active', true)
+
+    if (owners) {
+      const checkOutTime = new Date(updated.check_out_time).toLocaleString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      const hours = typeof updated.total_hours === 'number'
+        ? `${Math.floor(updated.total_hours)}h ${Math.round((updated.total_hours % 1) * 60)}m`
+        : ''
+      for (const owner of owners) {
+        if (owner.id === actor.actorId) continue
+        await createNotification({
+          recipientId: owner.id,
+          title: 'Check-Out',
+          body: `${actor.actorName} checked out at ${checkOutTime} (${hours})`,
+          type: 'check_out',
+        })
+      }
+    }
 
     return ok({
       attendance_record_id: updated.id,

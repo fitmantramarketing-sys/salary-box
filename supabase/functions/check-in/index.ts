@@ -6,6 +6,7 @@ import { checkIpWhitelist } from '../_shared/ip.ts'
 import { checkGeofence } from '../_shared/geo.ts'
 import { computeStatus, type AttendanceRecordForCompute } from '../_shared/attendance.ts'
 import { isHoliday, isWeeklyOff } from '../_shared/holiday.ts'
+import { createNotification } from '../_shared/notify.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
@@ -102,6 +103,29 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (error) throw error
+
+    // Notify all active owners of check-in
+    const { data: owners } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('role', 'owner')
+      .eq('is_active', true)
+
+    if (owners) {
+      const checkInTime = new Date(record.check_in_time).toLocaleString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      for (const owner of owners) {
+        if (owner.id === actor.actorId) continue
+        await createNotification({
+          recipientId: owner.id,
+          title: 'Check-In',
+          body: `${actor.actorName} checked in at ${checkInTime}`,
+          type: 'check_in',
+        })
+      }
+    }
 
     return ok({
       attendance_record_id: record.id,

@@ -6,6 +6,7 @@ export type Actor = {
   actorId: string
   actorRole: Role
   authUid: string
+  actorName: string
 }
 
 export async function getActor(req: Request): Promise<Actor> {
@@ -24,7 +25,7 @@ export async function getActor(req: Request): Promise<Actor> {
 
   const { data: employee, error: empError } = await supabase
     .from('employees')
-    .select('id, role')
+    .select('id, role, first_name, last_name')
     .eq('auth_id', user.id)
     .eq('is_active', true)
     .single()
@@ -37,6 +38,7 @@ export async function getActor(req: Request): Promise<Actor> {
     actorId: employee.id as string,
     actorRole: employee.role as Role,
     authUid: user.id,
+    actorName: `${employee.first_name} ${employee.last_name}`,
   }
 }
 

@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react'
 import { Bell } from 'lucide-react'
 import { useUnreadNotifications, useMarkAsRead, useMarkAllAsRead } from '@/features/notifications/hooks'
 import {
@@ -30,7 +31,18 @@ export function NotificationBell() {
   const markAll = useMarkAllAsRead()
   const navigate = useNavigate()
 
+  const prevCountRef = useRef(0)
   const unreadCount = notifications?.length ?? 0
+
+  useEffect(() => {
+    const count = notifications?.length ?? 0
+    if (count > 0 && count > prevCountRef.current) {
+      const audio = new Audio('/notification.mp3')
+      audio.volume = 0.5
+      audio.play().catch(() => {})
+    }
+    prevCountRef.current = count
+  }, [notifications])
 
   function handleClick(notification: { id: string; reference_id: string | null; reference_table: string | null; type: string }) {
     markRead.mutate(notification.id)
