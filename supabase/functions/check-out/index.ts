@@ -113,6 +113,7 @@ Deno.serve(async (req: Request) => {
       is_late: statusResult.is_late,
       is_geo_flagged: isGeoFlagged,
     }
+    if (record.is_wfh) updates.is_wfh = false
     if (isEarly) {
       updates.early_checkout_reason = early_checkout_reason
       updates.early_checkout_status = 'pending'

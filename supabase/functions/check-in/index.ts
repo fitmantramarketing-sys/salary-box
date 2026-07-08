@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: existing } = await supabase
       .from('attendance_records')
-      .select('id, check_in_time')
+      .select('id, check_in_time, is_wfh')
       .eq('employee_id', actor.actorId)
       .eq('date', today)
       .maybeSingle()
@@ -93,6 +93,8 @@ Deno.serve(async (req: Request) => {
       is_geo_flagged: isGeoFlagged,
       status: statusResult.status,
     }
+    // If the employee had opted for WFH and is now checking in from office, clear the WFH flag
+    if (existing?.is_wfh) payload.is_wfh = false
     if (latitude != null) payload.check_in_lat = Number(latitude)
     if (longitude != null) payload.check_in_lng = Number(longitude)
 

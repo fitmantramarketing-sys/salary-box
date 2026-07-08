@@ -77,14 +77,20 @@ Deno.serve(async (req: Request) => {
 
           const result = computeStatus(rec, shift, holidayFlag, woffFlag)
 
+          const updatePayload: Record<string, unknown> = {
+            total_hours: result.total_hours,
+            is_late: result.is_late,
+            is_geo_flagged: existing.is_geo_flagged,
+            status: result.status,
+          }
+          // If a WFH record has a check-in, it's no longer WFH
+          if (existing.is_wfh && existing.check_in_time) {
+            updatePayload.is_wfh = false
+          }
+
           await supabase
             .from('attendance_records')
-            .update({
-              total_hours: result.total_hours,
-              is_late: result.is_late,
-              is_geo_flagged: existing.is_geo_flagged,
-              status: result.status,
-            })
+            .update(updatePayload)
             .eq('id', existing.id)
 
           processed++

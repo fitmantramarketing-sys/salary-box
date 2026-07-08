@@ -127,13 +127,11 @@ export function computeStatus(
   //   >20 min after       → absent + late
 
   if (diffMin <= 0) {
-    const s = record.is_wfh ? 'work_from_home' : 'present'
-    return { status: s, total_hours: totalHours, is_late: false }
+    return { status: 'present', total_hours: totalHours, is_late: false }
   }
 
   if (diffMin <= 5) {
-    const s = record.is_wfh ? 'work_from_home' : 'present'
-    return { status: s, total_hours: totalHours, is_late: false }
+    return { status: 'present', total_hours: totalHours, is_late: false }
   }
 
   if (diffMin <= 20) {

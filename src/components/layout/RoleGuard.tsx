@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '@/hooks/useAuth'
 import type { Role } from '@/types'
@@ -5,10 +6,22 @@ import type { Role } from '@/types'
 /**
  * RequireAuth — blocks unauthenticated access.
  * Shows a spinner while the session is loading.
- * Redirects to /login if no user.
+ * If auth stays stuck for >10s, hard-reloads to nuke the corrupted supabase state machine.
  */
 export function RequireAuth() {
   const { user, isLoading } = useAuthStore()
+
+  useEffect(() => {
+    if (!isLoading) return
+    // Only auto-reload once per session to avoid infinite loops when offline
+    const reloadCount = Number(sessionStorage.getItem('authReloadCount') || '0')
+    if (reloadCount >= 1) return
+    const timer = setTimeout(() => {
+      sessionStorage.setItem('authReloadCount', String(reloadCount + 1))
+      window.location.reload()
+    }, 10_000)
+    return () => clearTimeout(timer)
+  }, [isLoading])
 
   if (isLoading) {
     return (

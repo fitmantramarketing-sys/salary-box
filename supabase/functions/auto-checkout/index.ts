@@ -22,7 +22,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: incomplete } = await supabase
       .from('attendance_records')
-      .select('id, employee_id, check_in_time, shift_id, status, employees!attendance_records_employee_id_fkey!inner(email, role)')
+      .select('id, employee_id, check_in_time, shift_id, status, is_wfh, employees!attendance_records_employee_id_fkey!inner(email, role)')
       .eq('date', today)
       .not('check_in_time', 'is', null)
       .is('check_out_time', null)
@@ -59,6 +59,7 @@ Deno.serve(async (req: Request) => {
           status: 'absent',
           total_hours: totalHours,
         }
+        if (record.is_wfh) updates.is_wfh = false
 
         const { error: updateError } = await supabase
           .from('attendance_records')

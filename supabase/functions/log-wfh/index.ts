@@ -30,6 +30,14 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    if (existing?.check_in_time) {
+      throw {
+        code: 'CONFLICT',
+        message: 'Already checked in today. Cannot switch to WFH after checking in.',
+        status: 409,
+      }
+    }
+
     const shift = await resolveShift(actor.actorId, today)
     const holidayFlag = await isHoliday(actor.actorId, today)
     const woffFlag = isWeeklyOff(shift, today)

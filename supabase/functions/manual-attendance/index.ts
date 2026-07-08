@@ -60,9 +60,13 @@ Deno.serve(async (req: Request) => {
       manual_entry_by: actor.actorId,
     }
 
-    if (check_in_time) payload.check_in_time = check_in_time
+    if (check_in_time) {
+      payload.check_in_time = check_in_time
+      // If there's a check-in, it's not WFH anymore
+      payload.is_wfh = false
+    }
     if (check_out_time) payload.check_out_time = check_out_time
-    if (is_wfh) payload.is_wfh = true
+    if (is_wfh && !check_in_time) payload.is_wfh = true
     payload.status = result.status
     payload.total_hours = result.total_hours
     payload.is_late = result.is_late
