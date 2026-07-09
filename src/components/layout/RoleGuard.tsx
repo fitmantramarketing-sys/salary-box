@@ -22,7 +22,7 @@ export function RequireAuth() {
       const count = Number(sessionStorage.getItem('authReloadCount') || '0')
       sessionStorage.setItem('authReloadCount', String(count + 1))
       window.location.reload()
-    }, 4000)
+    }, 1000)
 
     return () => clearTimeout(timer)
   }, [isLoading])

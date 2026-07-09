@@ -59,7 +59,6 @@ Deno.serve(async (req: Request) => {
       }
 
       if (existing) {
-        // If already checked out, recompute status for consistency
         if (existing.check_out_time) {
           const rec: AttendanceRecordForCompute = {
             id: existing.id,
@@ -81,11 +80,19 @@ Deno.serve(async (req: Request) => {
             total_hours: result.total_hours,
             is_late: result.is_late,
             is_geo_flagged: existing.is_geo_flagged,
-            status: result.status,
           }
+
           // If a WFH record has a check-in, it's no longer WFH
           if (existing.is_wfh && existing.check_in_time) {
             updatePayload.is_wfh = false
+          }
+
+          // Three branches for status:
+          //   1. Manually entered (regularization/manual entry) — respect human-set status
+          //   2. Auto-checkout set absent (no manual checkout) — keep absent
+          //   3. Normal auto-computed record — apply computed status
+          if (!existing.is_manually_entered && existing.status !== 'absent') {
+            updatePayload.status = result.status
           }
 
           await supabase
@@ -95,7 +102,6 @@ Deno.serve(async (req: Request) => {
 
           processed++
         }
-        // If checked in but no checkout — auto-checkout already set absent; keep it
       } else {
         // No record → create absent + notify
         const { error: insertError } = await supabase
