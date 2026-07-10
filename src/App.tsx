@@ -36,6 +36,7 @@ import LeaveTypesPage from '@/pages/LeaveTypesPage'
 import AppConfigPage from '@/pages/AppConfigPage'
 import IPWhitelistPage from '@/pages/IPWhitelistPage'
 import GeofencePage from '@/pages/GeofencePage'
+import LocationHistoryPage from '@/pages/LocationHistoryPage'
 import SettingsNotificationsPage from '@/pages/SettingsNotificationsPage'
 import SettingsOnboardingPage from '@/pages/SettingsOnboardingPage'
 import SettingsLeaveBalancesPage from '@/pages/SettingsLeaveBalancesPage'
@@ -249,6 +250,7 @@ export default function App() {
               <Route element={<RequireRole allow={['owner', 'system_admin']} />}>
                 <Route path="/settings/ip-whitelist" element={<IPWhitelistPage />} />
                 <Route path="/settings/geofence" element={<GeofencePage />} />
+                <Route path="/settings/location-history" element={<LocationHistoryPage />} />
               </Route>
               <Route element={<RequireRole allow={['owner']} />}>
                 <Route path="/settings/notifications" element={<SettingsNotificationsPage />} />

@@ -62,11 +62,16 @@ const {
 
     const isManagerExempt = actor.actorRole === 'owner' || actor.actorRole === 'hr'
     if (!isManagerExempt && leaveType.min_notice_days > 0) {
-      const earliestStart = new Date()
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const earliestStart = new Date(today)
       earliestStart.setDate(earliestStart.getDate() + leaveType.min_notice_days)
       const startDate = new Date(from_date + 'T00:00:00')
       if (startDate < earliestStart) {
-        return err('VALIDATION_ERROR', `This leave type requires ${leaveType.min_notice_days} days advance notice. Earliest allowed start date is ${earliestStart.toISOString().split('T')[0]}.`)
+        const y = earliestStart.getFullYear()
+        const m = String(earliestStart.getMonth() + 1).padStart(2, '0')
+        const d = String(earliestStart.getDate()).padStart(2, '0')
+        return err('VALIDATION_ERROR', `This leave type requires ${leaveType.min_notice_days} days advance notice. Earliest allowed start date is ${y}-${m}-${d}.`)
       }
     }
 

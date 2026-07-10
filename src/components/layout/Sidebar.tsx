@@ -89,6 +89,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Leave Types', href: '/settings/leave-types', roles: ['owner'] },
       { label: 'IP Whitelist', href: '/settings/ip-whitelist', roles: ['owner', 'system_admin'] },
       { label: 'Geofence', href: '/settings/geofence', roles: ['owner', 'system_admin'] },
+      { label: 'Location History', href: '/settings/location-history', roles: ['owner', 'system_admin'] },
       { label: 'Notifications', href: '/settings/notifications', roles: ['owner'] },
       { label: 'Onboarding', href: '/settings/onboarding-checklist', roles: ['owner'] },
       { label: 'Role Management', href: '/settings/roles', roles: ['owner'] },

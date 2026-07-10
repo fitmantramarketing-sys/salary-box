@@ -33,6 +33,16 @@ Deno.serve(async (req: Request) => {
       } else {
         const geoCheck = await checkGeofence(Number(latitude), Number(longitude))
         if (!geoCheck.inside) {
+          await supabase.from('location_snapshots').insert({
+            employee_id: actor.actorId,
+            action: 'check_in',
+            latitude: Number(latitude),
+            longitude: Number(longitude),
+            inside_geofence: false,
+            ip: clientIp || null,
+            successful: false,
+            error_code: 'FORBIDDEN',
+          })
           throw { code: 'FORBIDDEN', message: 'Check-in location is outside the allowed geofence area.', status: 403 }
         }
       }
@@ -105,6 +115,20 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (error) throw error
+
+    // Record location snapshot for successful check-in
+    if (latitude != null && longitude != null) {
+      await supabase.from('location_snapshots').insert({
+        employee_id: actor.actorId,
+        action: 'check_in',
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+        inside_geofence: true,
+        ip: clientIp || null,
+        successful: true,
+        attendance_record_id: record.id,
+      })
+    }
 
     // Notify all active owners of check-in
     const { data: owners } = await supabase
