@@ -1047,6 +1047,7 @@ export type Database = {
           id: string
           is_half_day: boolean
           leave_type_id: string
+          lwp_days: number
           reason: string
           reviewed_at: string | null
           reviewed_by: string | null
@@ -1071,6 +1072,7 @@ export type Database = {
           id?: string
           is_half_day?: boolean
           leave_type_id: string
+          lwp_days?: number
           reason: string
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -1095,6 +1097,7 @@ export type Database = {
           id?: string
           is_half_day?: boolean
           leave_type_id?: string
+          lwp_days?: number
           reason?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -1145,6 +1148,7 @@ export type Database = {
         Row: {
           accrued: number
           adjusted: number
+          annual_allocation: number
           carry_forward_amount: number
           carry_forward_expiry: string | null
           employee_id: string
@@ -1159,6 +1163,7 @@ export type Database = {
         Insert: {
           accrued?: number
           adjusted?: number
+          annual_allocation?: number
           carry_forward_amount?: number
           carry_forward_expiry?: string | null
           employee_id: string
@@ -1173,6 +1178,7 @@ export type Database = {
         Update: {
           accrued?: number
           adjusted?: number
+          annual_allocation?: number
           carry_forward_amount?: number
           carry_forward_expiry?: string | null
           employee_id?: string
@@ -1217,6 +1223,7 @@ export type Database = {
           is_lwp: boolean
           max_carry_forward_days: number
           max_consecutive_days: number | null
+          max_per_month: number | null
           min_notice_days: number
           name: string
           requires_attachment: boolean
@@ -1237,6 +1244,7 @@ export type Database = {
           is_lwp?: boolean
           max_carry_forward_days?: number
           max_consecutive_days?: number | null
+          max_per_month?: number | null
           min_notice_days?: number
           name: string
           requires_attachment?: boolean
@@ -1257,6 +1265,7 @@ export type Database = {
           is_lwp?: boolean
           max_carry_forward_days?: number
           max_consecutive_days?: number | null
+          max_per_month?: number | null
           min_notice_days?: number
           name?: string
           requires_attachment?: boolean

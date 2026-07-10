@@ -12,7 +12,7 @@ export function useEmployeeBalances(year: number) {
 export function useUpdateLeaveBalance() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...updates }: { id: string; opening_balance?: number; adjusted?: number }) =>
+    mutationFn: ({ id, ...updates }: { id: string; opening_balance?: number; adjusted?: number; annual_allocation?: number }) =>
       updateLeaveBalance(id, updates),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['leave-balances'] })

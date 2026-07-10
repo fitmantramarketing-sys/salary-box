@@ -92,6 +92,12 @@ export function LeaveApplicationDetail({ application }: Props) {
             <p className="text-xs text-muted-foreground">Working Days</p>
             <p className="font-medium">{application.working_days_count}</p>
           </div>
+          {(application.lwp_days ?? 0) > 0 && (
+            <div>
+              <p className="text-xs text-muted-foreground">LWP Days</p>
+              <p className="font-medium text-destructive">{application.lwp_days}</p>
+            </div>
+          )}
           {application.is_half_day && (
             <div>
               <p className="text-xs text-muted-foreground">Half Day</p>

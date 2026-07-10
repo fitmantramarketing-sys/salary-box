@@ -53,7 +53,15 @@ Deno.serve(async (req: Request) => {
           expiryDate = exp.toISOString().split('T')[0]
         }
 
-        const openingBalance = lt.accrual_type === 'yearly' ? carryForward + lt.accrual_days : carryForward
+        let openingBalance: number
+        if (lt.accrual_type === 'manual') {
+          // Manual types (PL): reset to annual_allocation (set by HR), no carry-forward
+          openingBalance = prevBalance?.annual_allocation ?? 0
+        } else if (lt.accrual_type === 'yearly') {
+          openingBalance = carryForward + (lt.accrual_days ?? 0)
+        } else {
+          openingBalance = carryForward
+        }
 
         const { data: existingNewBalance } = await supabase
           .from('leave_balances')
@@ -71,6 +79,7 @@ Deno.serve(async (req: Request) => {
               leave_type_id: lt.id,
               year: newYear,
               opening_balance: openingBalance,
+              annual_allocation: lt.accrual_type === 'manual' ? (prevBalance?.annual_allocation ?? 0) : 0,
               carry_forward_amount: carryForward > 0 ? carryForward : 0,
               carry_forward_expiry: expiryDate,
               accrued: lt.accrual_type === 'yearly' ? lt.accrual_days : 0,

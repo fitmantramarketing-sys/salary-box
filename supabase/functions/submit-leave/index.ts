@@ -12,16 +12,16 @@ Deno.serve(async (req: Request) => {
     const actor = await getActor(req)
     assertRole(actor, ['owner', 'hr', 'employee'])
 
-    const {
-      leave_type_id,
-      from_date,
-      to_date,
-      is_half_day = false,
-      half_day_period = null,
-      reason,
-      attachment_path = null,
-      monthly_excess_action,
-    } = await req.json()
+const {
+  leave_type_id,
+  from_date,
+  to_date,
+  is_half_day = false,
+  half_day_period = null,
+  reason,
+  attachment_path = null,
+  use_paid_for_excess,
+} = await req.json()
 
     if (!leave_type_id || !from_date || !to_date || !reason) {
       return err('VALIDATION_ERROR', 'leave_type_id, from_date, to_date, and reason are required')
@@ -87,49 +87,40 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Monthly paid leave cap (max 2 combined per month for non-LWP types)
-    if (!leaveType.is_lwp) {
-      const { data: paidTypes } = await supabase
-        .from('leave_types')
-        .select('id')
-        .eq('is_lwp', false)
-        .eq('is_active', true)
+    // Compute paid_days and lwp_days
+    let lwpDays = 0
 
-      const paidTypeIds = (paidTypes ?? []).map((t) => t.id)
+    if (leaveType.is_lwp) {
+      // LWP application: all days unpaid, no balance impact
+      lwpDays = workingDays
+    } else {
+      // Monthly cap check: count PAID (non-LWP) applications this month
+      const fromMonthStart = from_date.substring(0, 7) + '-01'
+      const fromMonthEnd = from_date.substring(0, 7) + '-31'
 
-      if (paidTypeIds.length > 0) {
-        const fromMonthStart = from_date.substring(0, 7) + '-01'
-        const fromMonthEnd = from_date.substring(0, 7) + '-31'
+      const { data: monthLeaves } = await supabase
+        .from('leave_applications')
+        .select('working_days_count, lwp_days')
+        .eq('employee_id', actor.actorId)
+        .in('status', ['pending', 'approved'])
+        .gte('from_date', fromMonthStart)
+        .lte('from_date', fromMonthEnd)
 
-        const { data: monthLeaves } = await supabase
-          .from('leave_applications')
-          .select('working_days_count')
-          .eq('employee_id', actor.actorId)
-          .in('status', ['pending', 'approved'])
-          .in('leave_type_id', paidTypeIds)
-          .gte('from_date', fromMonthStart)
-          .lte('from_date', fromMonthEnd)
+      const monthlyPaidConsumed = (monthLeaves ?? []).reduce(
+        (sum, l) => sum + ((l.working_days_count ?? 0) - (l.lwp_days ?? 0)), 0
+      )
 
-        const monthlyConsumed = (monthLeaves ?? []).reduce(
-          (sum, l) => sum + (l.working_days_count ?? 0), 0
-        )
+      const remainingMonthlyCap = Math.max(0, (leaveType.max_per_month ?? 99) - monthlyPaidConsumed)
 
-        const totalIfSubmitted = monthlyConsumed + workingDays
-
-        if (totalIfSubmitted > 2) {
-          if (monthly_excess_action === 'use_yearly_balance') {
-            // Allow — yearly balance check will handle it below
-          } else if (monthly_excess_action === 'lwp') {
-            return err('VALIDATION_ERROR',
-              'Monthly paid leave limit exceeded. Please submit the excess days as a separate Leave Without Pay application.'
-            )
-          } else {
-            return err('MONTHLY_LIMIT_EXCEEDED',
-              `Monthly paid leave limit would be exceeded (already used ${monthlyConsumed} day(s) this month).`,
-              400,
-              { monthly_consumed: monthlyConsumed, monthly_limit: 2 }
-            )
-          }
+      if (workingDays > remainingMonthlyCap) {
+        // Exceeds monthly cap — decide what to do with excess
+        if (use_paid_for_excess) {
+          // Employee chose to use yearly balance for excess days
+          // All days paid (monthly cap is a soft guideline)
+          lwpDays = 0
+        } else {
+          // Excess days are Leave Without Pay
+          lwpDays = workingDays - remainingMonthlyCap
         }
       }
     }
@@ -148,25 +139,36 @@ Deno.serve(async (req: Request) => {
       return err('CONFLICT', `You already have a ${overlap.status} leave for this period. Please cancel it first.`)
     }
 
-    const year = from_date.substring(0, 4)
+    const paidDays = workingDays - lwpDays
 
-    const { data: balance, error: balErr } = await supabase
-      .from('leave_balances')
-      .select('*')
-      .eq('employee_id', actor.actorId)
-      .eq('leave_type_id', leave_type_id)
-      .eq('year', year)
-      .maybeSingle()
+    if (!leaveType.is_lwp) {
+      const year = from_date.substring(0, 4)
 
-    if (balErr) throw balErr
+      const { data: balance, error: balErr } = await supabase
+        .from('leave_balances')
+        .select('*')
+        .eq('employee_id', actor.actorId)
+        .eq('leave_type_id', leave_type_id)
+        .eq('year', year)
+        .maybeSingle()
 
-    const available = balance
-      ? (balance.opening_balance + balance.adjusted) - balance.taken - balance.pending
-      : 0
+      if (balErr) throw balErr
 
-    if (workingDays > available) {
-      if (!leaveType.allow_negative_balance) {
-        return err('VALIDATION_ERROR', `Insufficient balance. Available: ${available} days.`)
+      const available = balance
+        ? (balance.opening_balance + balance.accrued + balance.adjusted) - balance.taken - balance.pending
+        : 0
+
+      if (paidDays > available) {
+        if (!leaveType.allow_negative_balance) {
+          return err('VALIDATION_ERROR', `Insufficient balance. Available: ${available} days. Requested paid: ${paidDays} days.`)
+        }
+      }
+
+      if (balance) {
+        await supabase
+          .from('leave_balances')
+          .update({ pending: balance.pending + paidDays })
+          .eq('id', balance.id)
       }
     }
 
@@ -182,6 +184,7 @@ Deno.serve(async (req: Request) => {
         reason,
         attachment_path,
         working_days_count: workingDays,
+        lwp_days: lwpDays,
         status: 'pending',
         applied_at: new Date().toISOString(),
       })
@@ -189,13 +192,6 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (insErr) throw insErr
-
-    if (balance) {
-      await supabase
-        .from('leave_balances')
-        .update({ pending: balance.pending + workingDays })
-        .eq('id', balance.id)
-    }
 
     let escalatedTo: string | null = null
 

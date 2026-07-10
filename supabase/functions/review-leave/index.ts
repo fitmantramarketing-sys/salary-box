@@ -55,6 +55,8 @@ Deno.serve(async (req: Request) => {
         })
         .eq('id', application_id)
 
+      const paidDays = app.working_days_count - (app.lwp_days ?? 0)
+
       const { data: balance } = await supabase
         .from('leave_balances')
         .select('*')
@@ -63,12 +65,12 @@ Deno.serve(async (req: Request) => {
         .eq('year', app.from_date.substring(0, 4))
         .single()
 
-      if (balance) {
+      if (balance && paidDays > 0) {
         await supabase
           .from('leave_balances')
           .update({
-            taken: balance.taken + app.working_days_count,
-            pending: Math.max(0, balance.pending - app.working_days_count),
+            taken: balance.taken + paidDays,
+            pending: Math.max(0, balance.pending - paidDays),
           })
           .eq('id', balance.id)
       }
@@ -156,6 +158,8 @@ Deno.serve(async (req: Request) => {
         })
         .eq('id', application_id)
 
+      const paidDays = app.working_days_count - (app.lwp_days ?? 0)
+
       const { data: balance } = await supabase
         .from('leave_balances')
         .select('*')
@@ -164,10 +168,10 @@ Deno.serve(async (req: Request) => {
         .eq('year', app.from_date.substring(0, 4))
         .single()
 
-      if (balance) {
+      if (balance && paidDays > 0) {
         await supabase
           .from('leave_balances')
-          .update({ pending: Math.max(0, balance.pending - app.working_days_count) })
+          .update({ pending: Math.max(0, balance.pending - paidDays) })
           .eq('id', balance.id)
       }
 

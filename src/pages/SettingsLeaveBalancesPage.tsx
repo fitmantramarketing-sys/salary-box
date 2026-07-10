@@ -29,7 +29,7 @@ export default function SettingsLeaveBalancesPage() {
   const updateMutation = useUpdateLeaveBalance()
   const resetMutation = useYearEndReset()
 
-  const [editingCell, setEditingCell] = useState<{ balanceId: string; field: 'opening_balance' | 'adjusted' } | null>(null)
+  const [editingCell, setEditingCell] = useState<{ balanceId: string; field: 'opening_balance' | 'adjusted' | 'annual_allocation' } | null>(null)
   const [editValue, setEditValue] = useState('')
   const editInputRef = useRef<HTMLInputElement>(null)
 
@@ -53,7 +53,7 @@ export default function SettingsLeaveBalancesPage() {
     return balanceMap.get(key)?.[0]
   }
 
-  function startEdit(balanceId: string, field: 'opening_balance' | 'adjusted', currentValue: number) {
+  function startEdit(balanceId: string, field: 'opening_balance' | 'adjusted' | 'annual_allocation', currentValue: number) {
     setEditingCell({ balanceId, field })
     setEditValue(String(currentValue))
     requestAnimationFrame(() => editInputRef.current?.focus())
@@ -64,7 +64,7 @@ export default function SettingsLeaveBalancesPage() {
     setEditValue('')
   }
 
-  function saveEdit(balanceId: string, field: 'opening_balance' | 'adjusted') {
+  function saveEdit(balanceId: string, field: 'opening_balance' | 'adjusted' | 'annual_allocation') {
     const parsed = parseFloat(editValue)
     if (isNaN(parsed)) {
       cancelEdit()
@@ -74,7 +74,7 @@ export default function SettingsLeaveBalancesPage() {
     cancelEdit()
   }
 
-  function handleKeyDown(e: React.KeyboardEvent, balanceId: string, field: 'opening_balance' | 'adjusted') {
+  function handleKeyDown(e: React.KeyboardEvent, balanceId: string, field: 'opening_balance' | 'adjusted' | 'annual_allocation') {
     if (e.key === 'Enter') {
       e.preventDefault()
       saveEdit(balanceId, field)
@@ -167,7 +167,7 @@ export default function SettingsLeaveBalancesPage() {
                     <TableHead className="min-w-[90px]">Code</TableHead>
                     <TableHead className="min-w-[140px]">Department</TableHead>
                     {leaveTypes.map((lt) => (
-                      <TableHead key={lt!.id} colSpan={3} className="text-center border-l">
+                      <TableHead key={lt!.id} colSpan={4} className="text-center border-l">
                         {lt!.name}
                       </TableHead>
                     ))}
@@ -178,6 +178,9 @@ export default function SettingsLeaveBalancesPage() {
                     <TableHead />
                     {leaveTypes.map((lt) => (
                       <>
+                        <TableHead key={`${lt!.id}-annual`} className="text-xs font-normal text-muted-foreground min-w-[70px]">
+                          Alloc
+                        </TableHead>
                         <TableHead key={`${lt!.id}-opening`} className="text-xs font-normal text-muted-foreground min-w-[80px]">
                           Opening
                         </TableHead>
@@ -209,14 +212,46 @@ export default function SettingsLeaveBalancesPage() {
                           const opening = bal?.opening_balance ?? 0
                           const adjusted = bal?.adjusted ?? 0
                           const total = opening + adjusted
+                          const annualAlloc = bal?.annual_allocation ?? 0
 
                           const isEditingOpening =
                             editingCell?.balanceId === bal?.id && editingCell?.field === 'opening_balance'
                           const isEditingAdjusted =
                             editingCell?.balanceId === bal?.id && editingCell?.field === 'adjusted'
 
+                          const isEditingAnnual =
+                            editingCell?.balanceId === bal?.id && editingCell?.field === 'annual_allocation'
+
                           return (
                             <>
+                              <TableCell key={`${lt!.id}-annual`}>
+                                {bal ? (
+                                  isEditingAnnual ? (
+                                    <Input
+                                      ref={editInputRef}
+                                      className="h-7 w-20"
+                                      value={editValue}
+                                      onChange={(e) => setEditValue(e.target.value)}
+                                      onBlur={() => saveEdit(bal.id, 'annual_allocation')}
+                                      onKeyDown={(e) => handleKeyDown(e, bal.id, 'annual_allocation')}
+                                      type="number"
+                                      step="0.5"
+                                    />
+                                  ) : (
+                                    <button
+                                      className={cn(
+                                        'h-7 px-2 rounded text-sm hover:bg-accent cursor-pointer text-left w-20',
+                                        updateMutation.isPending && 'opacity-50 pointer-events-none'
+                                      )}
+                                      onClick={() => startEdit(bal.id, 'annual_allocation', annualAlloc)}
+                                    >
+                                      {annualAlloc}
+                                    </button>
+                                  )
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">—</span>
+                                )}
+                              </TableCell>
                               <TableCell key={`${lt!.id}-opening`}>
                                 {bal ? (
                                   isEditingOpening ? (

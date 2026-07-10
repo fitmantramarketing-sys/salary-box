@@ -107,39 +107,33 @@ export function ApplyLeaveForm() {
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  const onSubmit = async (data: SubmitLeaveForm, monthlyExcessAction?: 'use_yearly_balance' | 'lwp') => {
+  const onSubmit = async (data: SubmitLeaveForm, usePaidForExcess?: boolean) => {
     try {
       const payload = { ...data, attachment_path: attachmentPath }
-      if (monthlyExcessAction) {
-        ;(payload as Record<string, unknown>).monthly_excess_action = monthlyExcessAction
+      if (usePaidForExcess !== undefined) {
+        ;(payload as Record<string, unknown>).use_paid_for_excess = usePaidForExcess
       }
       const result = await submitLeave.mutateAsync(payload)
-      toast.success(
-        `Leave submitted (${result.working_days_count} working day${result.working_days_count !== 1 ? 's' : ''})`
-      )
+      const lwpDays = (result as Record<string, unknown>).lwp_days as number ?? 0
+      const paidDays = result.working_days_count - lwpDays
+      const msg = `Leave submitted (${paidDays} paid${lwpDays > 0 ? ` + ${lwpDays} LWP` : ''} day${result.working_days_count !== 1 ? 's' : ''})`
+      toast.success(msg)
       navigate('/leave')
     } catch (e: unknown) {
-      const err = e as { code?: string; message?: string; details?: { monthly_consumed?: number; monthly_limit?: number } }
-      if (err?.code === 'MONTHLY_LIMIT_EXCEEDED') {
-        setMonthlyLimitDialog({
-          formData: data,
-          monthlyConsumed: err.details?.monthly_consumed ?? 0,
-        })
-        return
-      }
+      const err = e as { code?: string; message?: string }
       toast.error(err?.message ?? 'Failed to submit leave')
     }
   }
 
   const handleYearlyBalance = () => {
     if (!monthlyLimitDialog) return
-    onSubmit(monthlyLimitDialog.formData, 'use_yearly_balance')
+    onSubmit(monthlyLimitDialog.formData, true)
     setMonthlyLimitDialog(null)
   }
 
   const handleLwp = () => {
     if (!monthlyLimitDialog) return
-    onSubmit(monthlyLimitDialog.formData, 'lwp')
+    onSubmit(monthlyLimitDialog.formData, false)
     setMonthlyLimitDialog(null)
   }
 

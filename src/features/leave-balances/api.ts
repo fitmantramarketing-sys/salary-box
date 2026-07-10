@@ -20,7 +20,7 @@ export async function fetchEmployeeBalances(year: number) {
   return { employees: empRes.data ?? [], balances: balRes.data ?? [] }
 }
 
-export async function updateLeaveBalance(id: string, updates: { opening_balance?: number; adjusted?: number }) {
+export async function updateLeaveBalance(id: string, updates: { opening_balance?: number; adjusted?: number; annual_allocation?: number }) {
   const { error } = await supabase
     .from('leave_balances')
     .update(updates)

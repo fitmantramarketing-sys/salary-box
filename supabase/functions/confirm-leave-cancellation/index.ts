@@ -54,6 +54,8 @@ Deno.serve(async (req: Request) => {
         .eq('id', application_id)
 
       if (app.to_date >= today) {
+        const paidDays = app.working_days_count - (app.lwp_days ?? 0)
+
         const { data: balance } = await supabase
           .from('leave_balances')
           .select('*')
@@ -62,10 +64,10 @@ Deno.serve(async (req: Request) => {
           .eq('year', app.from_date.substring(0, 4))
           .single()
 
-        if (balance) {
+        if (balance && paidDays > 0) {
           await supabase
             .from('leave_balances')
-            .update({ taken: Math.max(0, balance.taken - app.working_days_count) })
+            .update({ taken: Math.max(0, balance.taken - paidDays) })
             .eq('id', balance.id)
         }
       }

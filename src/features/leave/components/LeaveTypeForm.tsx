@@ -32,6 +32,7 @@ const defaultForm = {
   requires_attachment: false,
   attachment_required_after_days: 0,
   max_consecutive_days: 0,
+  max_per_month: 0,
   min_notice_days: 0,
   applicable_gender: 'all' as GenderSelect,
 }
@@ -55,6 +56,7 @@ export function LeaveTypeForm({ open, onOpenChange, leaveType }: Props) {
         requires_attachment: leaveType.requires_attachment,
         attachment_required_after_days: leaveType.attachment_required_after_days ?? 0,
         max_consecutive_days: leaveType.max_consecutive_days ?? 0,
+        max_per_month: leaveType.max_per_month ?? 0,
         min_notice_days: leaveType.min_notice_days,
         applicable_gender: (leaveType.applicable_gender ?? 'all') as GenderSelect,
       })
@@ -82,6 +84,7 @@ export function LeaveTypeForm({ open, onOpenChange, leaveType }: Props) {
         requires_attachment: form.requires_attachment,
         attachment_required_after_days: form.attachment_required_after_days || null,
         max_consecutive_days: form.max_consecutive_days || null,
+        max_per_month: form.max_per_month || null,
         min_notice_days: form.min_notice_days,
         applicable_gender: form.applicable_gender === 'all' ? null : form.applicable_gender,
       }
@@ -172,6 +175,11 @@ export function LeaveTypeForm({ open, onOpenChange, leaveType }: Props) {
               <Label htmlFor="lt-min-notice">Min Notice Days</Label>
               <Input id="lt-min-notice" type="number" min={0} value={form.min_notice_days} onChange={(e) => set('min_notice_days', Number(e.target.value))} />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="lt-max-per-month">Max Per Month (0 = unlimited)</Label>
+            <Input id="lt-max-per-month" type="number" min={0} value={form.max_per_month} onChange={(e) => set('max_per_month', Number(e.target.value))} />
           </div>
 
           <div className="space-y-2">
