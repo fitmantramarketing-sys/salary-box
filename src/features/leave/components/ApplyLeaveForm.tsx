@@ -137,16 +137,18 @@ export function ApplyLeaveForm() {
     }
   }
 
-  const handleYearlyBalance = () => {
-    if (!monthlyLimitDialog) return
-    onSubmit(monthlyLimitDialog.formData, true)
+  const handleYearlyBalance = async () => {
+    const dialog = monthlyLimitDialog
+    if (!dialog) return
     setMonthlyLimitDialog(null)
+    await onSubmit(dialog.formData, true)
   }
 
-  const handleLwp = () => {
-    if (!monthlyLimitDialog) return
-    onSubmit(monthlyLimitDialog.formData, false)
+  const handleLwp = async () => {
+    const dialog = monthlyLimitDialog
+    if (!dialog) return
     setMonthlyLimitDialog(null)
+    await onSubmit(dialog.formData, false)
   }
 
   if (typesLoading || balancesLoading) {
