@@ -113,14 +113,19 @@ const {
       const remainingMonthlyCap = Math.max(0, (leaveType.max_per_month ?? 99) - monthlyPaidConsumed)
 
       if (workingDays > remainingMonthlyCap) {
-        // Exceeds monthly cap — decide what to do with excess
-        if (use_paid_for_excess) {
+        if (use_paid_for_excess === true) {
           // Employee chose to use yearly balance for excess days
-          // All days paid (monthly cap is a soft guideline)
           lwpDays = 0
-        } else {
+        } else if (use_paid_for_excess === false) {
           // Excess days are Leave Without Pay
           lwpDays = workingDays - remainingMonthlyCap
+        } else {
+          // No preference given — ask the frontend to show the dialog
+          return err('MONTHLY_LIMIT_EXCEEDED',
+            `You have used ${monthlyPaidConsumed} of ${leaveType.max_per_month} paid leave days this month.`,
+            400,
+            { monthly_consumed: monthlyPaidConsumed, monthly_limit: leaveType.max_per_month }
+          )
         }
       }
     }

@@ -116,11 +116,23 @@ export function ApplyLeaveForm() {
       const result = await submitLeave.mutateAsync(payload)
       const lwpDays = (result as Record<string, unknown>).lwp_days as number ?? 0
       const paidDays = result.working_days_count - lwpDays
-      const msg = `Leave submitted (${paidDays} paid${lwpDays > 0 ? ` + ${lwpDays} LWP` : ''} day${result.working_days_count !== 1 ? 's' : ''})`
+      const s = result.working_days_count !== 1 ? 's' : ''
+      const msg = paidDays === 0
+        ? `Leave submitted (${result.working_days_count} unpaid day${s})`
+        : lwpDays > 0
+          ? `Leave submitted (${paidDays} paid + ${lwpDays} LWP day${s})`
+          : `Leave submitted (${paidDays} paid day${s})`
       toast.success(msg)
       navigate('/leave')
     } catch (e: unknown) {
-      const err = e as { code?: string; message?: string }
+      const err = e as { code?: string; message?: string; details?: { monthly_consumed?: number; monthly_limit?: number } }
+      if (err?.code === 'MONTHLY_LIMIT_EXCEEDED') {
+        setMonthlyLimitDialog({
+          formData: data,
+          monthlyConsumed: err.details?.monthly_consumed ?? 0,
+        })
+        return
+      }
       toast.error(err?.message ?? 'Failed to submit leave')
     }
   }
