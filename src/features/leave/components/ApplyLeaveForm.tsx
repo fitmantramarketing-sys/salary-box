@@ -2,10 +2,12 @@ import { useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { callEdgeFunctionFormData } from '@/lib/edge'
+import { useQueryClient } from '@tanstack/react-query'
+import { callEdgeFunction, callEdgeFunctionFormData } from '@/lib/edge'
 import { useLeaveTypes, useMyLeaveBalances } from '../hooks'
 import { useSubmitLeave } from '../mutations'
 import { submitLeaveSchema, type SubmitLeaveForm } from '../schemas'
+import type { SubmitLeaveResponse } from '@/types'
 import { getAvailableBalance } from '../utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,6 +36,7 @@ import { toast } from 'sonner'
 
 export function ApplyLeaveForm() {
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const { data: leaveTypes, isLoading: typesLoading } = useLeaveTypes()
   const { data: balances, isLoading: balancesLoading } = useMyLeaveBalances(
     new Date().getFullYear()
@@ -107,13 +110,10 @@ export function ApplyLeaveForm() {
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  const onSubmit = async (data: SubmitLeaveForm, usePaidForExcess?: boolean) => {
+  const onSubmit = async (data: SubmitLeaveForm) => {
     try {
-      const payload = { ...data, attachment_path: attachmentPath }
-      if (usePaidForExcess !== undefined) {
-        ;(payload as Record<string, unknown>).use_paid_for_excess = usePaidForExcess
-      }
-      const result = await submitLeave.mutateAsync(payload)
+      const payload = { ...data, attachment_path: attachmentPath } as Record<string, unknown>
+      const result = await submitLeave.mutateAsync(payload as SubmitLeaveForm)
       const lwpDays = (result as Record<string, unknown>).lwp_days as number ?? 0
       const paidDays = result.working_days_count - lwpDays
       const s = result.working_days_count !== 1 ? 's' : ''
@@ -141,14 +141,74 @@ export function ApplyLeaveForm() {
     const dialog = monthlyLimitDialog
     if (!dialog) return
     setMonthlyLimitDialog(null)
-    await onSubmit(dialog.formData, true)
+    try {
+      const payload = {
+        ...dialog.formData,
+        attachment_path: attachmentPath,
+        use_paid_for_excess: true,
+      } as Record<string, unknown>
+      const result = await callEdgeFunction<Record<string, unknown>, SubmitLeaveResponse>(
+        'submit-leave', payload
+      )
+      const lwpDays = (result as Record<string, unknown>).lwp_days as number ?? 0
+      const paidDays = result.working_days_count - lwpDays
+      const s = result.working_days_count !== 1 ? 's' : ''
+      const msg = paidDays === 0
+        ? `Leave submitted (${result.working_days_count} unpaid day${s})`
+        : lwpDays > 0
+          ? `Leave submitted (${paidDays} paid + ${lwpDays} LWP day${s})`
+          : `Leave submitted (${paidDays} paid day${s})`
+      toast.success(msg)
+      qc.invalidateQueries({ queryKey: ['leave'] })
+      navigate('/leave')
+    } catch (e: unknown) {
+      const err = e as { code?: string; message?: string; details?: { monthly_consumed?: number; monthly_limit?: number } }
+      if (err?.code === 'MONTHLY_LIMIT_EXCEEDED') {
+        setMonthlyLimitDialog({
+          formData: dialog.formData,
+          monthlyConsumed: err.details?.monthly_consumed ?? 0,
+        })
+        return
+      }
+      toast.error(err?.message ?? 'Failed to submit leave')
+    }
   }
 
   const handleLwp = async () => {
     const dialog = monthlyLimitDialog
     if (!dialog) return
     setMonthlyLimitDialog(null)
-    await onSubmit(dialog.formData, false)
+    try {
+      const payload = {
+        ...dialog.formData,
+        attachment_path: attachmentPath,
+        use_paid_for_excess: false,
+      } as Record<string, unknown>
+      const result = await callEdgeFunction<Record<string, unknown>, SubmitLeaveResponse>(
+        'submit-leave', payload
+      )
+      const lwpDays = (result as Record<string, unknown>).lwp_days as number ?? 0
+      const paidDays = result.working_days_count - lwpDays
+      const s = result.working_days_count !== 1 ? 's' : ''
+      const msg = paidDays === 0
+        ? `Leave submitted (${result.working_days_count} unpaid day${s})`
+        : lwpDays > 0
+          ? `Leave submitted (${paidDays} paid + ${lwpDays} LWP day${s})`
+          : `Leave submitted (${paidDays} paid day${s})`
+      toast.success(msg)
+      qc.invalidateQueries({ queryKey: ['leave'] })
+      navigate('/leave')
+    } catch (e: unknown) {
+      const err = e as { code?: string; message?: string; details?: { monthly_consumed?: number; monthly_limit?: number } }
+      if (err?.code === 'MONTHLY_LIMIT_EXCEEDED') {
+        setMonthlyLimitDialog({
+          formData: dialog.formData,
+          monthlyConsumed: err.details?.monthly_consumed ?? 0,
+        })
+        return
+      }
+      toast.error(err?.message ?? 'Failed to submit leave')
+    }
   }
 
   if (typesLoading || balancesLoading) {
