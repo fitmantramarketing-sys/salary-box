@@ -9,6 +9,10 @@ import { queryClient } from './lib/queryClient.ts'
 import { registerPushSubscription } from './features/notifications/push.ts'
 import './index.css'
 
+// Request persistent storage so Chrome doesn't wipe localStorage (auth tokens)
+// when "Clear Cookies/Site Data on Close" is enabled on mobile.
+navigator.storage?.persist?.()
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then(() => {

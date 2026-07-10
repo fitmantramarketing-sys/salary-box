@@ -80,6 +80,7 @@ export type Database = {
           check_out_lat: number | null
           check_out_lng: number | null
           check_out_time: string | null
+          checkout_reminder_sent_at: string | null
           created_at: string
           date: string
           early_checkout_reason: string | null
@@ -108,6 +109,7 @@ export type Database = {
           check_out_lat?: number | null
           check_out_lng?: number | null
           check_out_time?: string | null
+          checkout_reminder_sent_at?: string | null
           created_at?: string
           date: string
           early_checkout_reason?: string | null
@@ -136,6 +138,7 @@ export type Database = {
           check_out_lat?: number | null
           check_out_lng?: number | null
           check_out_time?: string | null
+          checkout_reminder_sent_at?: string | null
           created_at?: string
           date?: string
           early_checkout_reason?: string | null
