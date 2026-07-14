@@ -14,7 +14,7 @@ Deno.serve(async (req: Request) => {
     assertRole(actor, ['owner', 'hr'])
     const body = await req.json()
 
-    const { request_id, action, comment } = body
+    const { request_id, action, comment, status_override } = body
 
     if (!request_id || !action || !['approve', 'reject'].includes(action)) {
       throw { code: 'VALIDATION_ERROR', message: 'request_id and action (approve|reject) are required.', status: 400 }
@@ -65,7 +65,9 @@ Deno.serve(async (req: Request) => {
 
       const updates: Record<string, unknown> = {}
 
-      if (reqRecord.requested_status) {
+      if (status_override) {
+        updates.status = status_override
+      } else if (reqRecord.requested_status) {
         updates.status = reqRecord.requested_status
       }
 

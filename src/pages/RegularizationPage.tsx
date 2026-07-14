@@ -450,6 +450,7 @@ function PendingReviewsTab() {
   const qc = useQueryClient()
   const [comment, setComment] = useState('')
   const [reviewDialog, setReviewDialog] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null)
+  const [halfDayIds, setHalfDayIds] = useState<Set<string>>(new Set())
 
   const { data: pending, isLoading } = useQuery({
     queryKey: ['attendance', 'regularization', 'pending'],
@@ -457,8 +458,8 @@ function PendingReviewsTab() {
   })
 
   const reviewMutation = useMutation({
-    mutationFn: async ({ request_id, action, comment: c }: { request_id: string; action: 'approve' | 'reject'; comment?: string }) =>
-      callEdgeFunction('review-regularization', { request_id, action, comment: c }),
+    mutationFn: async ({ request_id, action, comment: c, halfDay }: { request_id: string; action: 'approve' | 'reject'; comment?: string; halfDay?: boolean }) =>
+      callEdgeFunction('review-regularization', { request_id, action, comment: c, ...(halfDay ? { status_override: 'half_day' } : {}) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attendance', 'regularization'] })
       toast.success('Request reviewed')
@@ -513,9 +514,25 @@ function PendingReviewsTab() {
                     <div className="flex gap-2 shrink-0">
                       <Button
                         size="sm"
+                        variant="outline"
+                        disabled={reviewMutation.isPending}
+                        onClick={() => {
+                          setHalfDayIds((prev) => {
+                            const next = new Set(prev)
+                            if (next.has(req.id)) next.delete(req.id)
+                            else next.add(req.id)
+                            return next
+                          })
+                        }}
+                        className={halfDayIds.has(req.id) ? 'border-amber-500 bg-amber-50 text-amber-700' : ''}
+                      >
+                        {halfDayIds.has(req.id) ? 'Half Day' : 'Full Day'}
+                      </Button>
+                      <Button
+                        size="sm"
                         className="bg-green-600 hover:bg-green-700"
                         disabled={reviewMutation.isPending}
-                        onClick={() => reviewMutation.mutate({ request_id: req.id, action: 'approve' })}
+                        onClick={() => reviewMutation.mutate({ request_id: req.id, action: 'approve', halfDay: halfDayIds.has(req.id) })}
                       >
                         <CheckCircle2 className="mr-1 h-3.5 w-3.5" />Approve
                       </Button>
