@@ -8,6 +8,7 @@ export function AttendanceSummaryCards({ records }: Props) {
 
   const present = records.filter((r) => r.status === 'present').length
   const absent = records.filter((r) => r.status === 'absent').length
+  const incomplete = records.filter((r) => r.status === 'incomplete').length
   const wfh = records.filter((r) => r.status === 'work_from_home' || r.is_wfh).length
   const late = records.filter((r) => r.is_late).length
   const onLeave = records.filter((r) => r.status === 'on_leave').length
@@ -16,6 +17,7 @@ export function AttendanceSummaryCards({ records }: Props) {
   const items = [
     { label: 'Present', count: present, className: 'bg-green-50 text-green-700' },
     { label: 'Absent', count: absent, className: 'bg-red-50 text-red-700' },
+    { label: 'Incomplete', count: incomplete, className: 'bg-yellow-50 text-yellow-700' },
     { label: 'WFH', count: wfh, className: 'bg-blue-50 text-blue-700' },
     { label: 'Late', count: late, className: 'bg-yellow-50 text-yellow-700' },
     { label: 'On Leave', count: onLeave, className: 'bg-purple-50 text-purple-700' },

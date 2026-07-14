@@ -94,22 +94,23 @@ export default function TeamAttendancePage() {
 
   function getSummary(employeeId: string) {
     const empRecords = recordMap.get(employeeId)
-    if (!empRecords) return { present: 0, absent: 0, late: 0, wfh: 0, leave: 0 }
-    let present = 0, absent = 0, late = 0, wfh = 0, leave = 0
+    if (!empRecords) return { present: 0, absent: 0, incomplete: 0, late: 0, wfh: 0, leave: 0 }
+    let present = 0, absent = 0, incomplete = 0, late = 0, wfh = 0, leave = 0
     for (const r of empRecords.values()) {
       if (r.status === 'present') present++
       if (r.status === 'absent') absent++
+      if (r.status === 'incomplete') incomplete++
       if (r.status === 'half_day') present += 0.5
       if (r.status === 'on_leave') leave++
       if (r.is_wfh) wfh++
       if (r.is_late) late++
     }
-    return { present, absent, late, wfh, leave }
+    return { present, absent, incomplete, late, wfh, leave }
   }
 
   function exportCSV() {
     if (!data) return
-    const header = ['Employee', 'Code', 'Department', ...Array.from({ length: daysInMonth }, (_, i) => String(i + 1)), 'Present', 'Absent', 'Late', 'WFH']
+    const header = ['Employee', 'Code', 'Department', ...Array.from({ length: daysInMonth }, (_, i) => String(i + 1)), 'Present', 'Absent', 'Incomplete', 'Late', 'WFH']
     const rows = data.employees.map((emp) => {
       const summary = getSummary(emp.id)
       const days = Array.from({ length: daysInMonth }, (_, i) => {
@@ -117,7 +118,7 @@ export default function TeamAttendancePage() {
         const r = recordMap.get(emp.id)?.get(dateStr)
         return r ? getAttendanceStatusLabel(r.status) : '—'
       })
-      return [emp.first_name, emp.employee_code, emp.department?.name ?? '', ...days, String(summary.present), String(summary.absent), String(summary.late), String(summary.wfh)]
+      return [emp.first_name, emp.employee_code, emp.department?.name ?? '', ...days, String(summary.present), String(summary.absent), String(summary.incomplete), String(summary.late), String(summary.wfh)]
     })
     const csv = [header, ...rows].map((r) => r.map((c) => `"${c}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -164,6 +165,7 @@ export default function TeamAttendancePage() {
                 ))}
                 <th className="p-1.5 text-center font-medium text-green-600 min-w-[60px] border-b">P</th>
                 <th className="p-1.5 text-center font-medium text-red-600 min-w-[60px] border-b">A</th>
+                <th className="p-1.5 text-center font-medium text-yellow-500 min-w-[60px] border-b">I</th>
                 <th className="p-1.5 text-center font-medium text-yellow-600 min-w-[60px] border-b">L</th>
                 <th className="p-1.5 text-center font-medium text-blue-600 min-w-[60px] border-b">WFH</th>
               </tr>
@@ -205,6 +207,7 @@ export default function TeamAttendancePage() {
                     })}
                     <td className="p-1.5 text-center font-medium text-green-700 border-b">{summary.present}</td>
                     <td className="p-1.5 text-center font-medium text-red-700 border-b">{summary.absent}</td>
+                    <td className="p-1.5 text-center font-medium text-yellow-500 border-b">{summary.incomplete}</td>
                     <td className="p-1.5 text-center font-medium text-yellow-700 border-b">{summary.late}</td>
                     <td className="p-1.5 text-center font-medium text-blue-700 border-b">{summary.wfh}</td>
                   </tr>

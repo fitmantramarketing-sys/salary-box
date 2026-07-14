@@ -92,6 +92,7 @@ export default function ReportsAttendancePage() {
     const present = pastReport.filter((r) => r.status === 'present').length
     const wfh = pastReport.filter((r) => r.status === 'work_from_home' || r.isWfh).length
     const absent = pastReport.filter((r) => r.status === 'absent').length
+    const incomplete = pastReport.filter((r) => r.status === 'incomplete').length
     const halfDay = pastReport.filter((r) => r.status === 'half_day').length
     const onLeave = pastReport.filter((r) => r.status === 'on_leave').length
     const late = pastReport.filter((r) => r.isLate).length
@@ -123,6 +124,7 @@ export default function ReportsAttendancePage() {
                 { label: 'Present', count: present, cls: 'text-green-700 bg-green-50' },
                 { label: 'WFH', count: wfh, cls: 'text-blue-700 bg-blue-50' },
                 { label: 'Absent', count: absent, cls: 'text-red-700 bg-red-50' },
+                { label: 'Incomplete', count: incomplete, cls: 'text-yellow-700 bg-yellow-50' },
                 { label: 'Half Day', count: halfDay, cls: 'text-orange-700 bg-orange-50' },
                 { label: 'On Leave', count: onLeave, cls: 'text-purple-700 bg-purple-50' },
                 { label: 'Late', count: late, cls: 'text-yellow-700 bg-yellow-50' },

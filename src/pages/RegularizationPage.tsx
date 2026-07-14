@@ -325,6 +325,7 @@ function MyRequestsTab() {
 function EarlyCheckoutsTab() {
   const qc = useQueryClient()
   const [confirmDialog, setConfirmDialog] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null)
+  const [halfDayIds, setHalfDayIds] = useState<Set<string>>(new Set())
 
   const { data: earlyCheckouts, isLoading } = useQuery({
     queryKey: ['attendance', 'early-checkouts', 'pending'],
@@ -332,12 +333,13 @@ function EarlyCheckoutsTab() {
   })
 
   const resolveMutation = useMutation({
-    mutationFn: async ({ id, action }: { id: string; action: 'approve' | 'reject' }) => {
+    mutationFn: async ({ id, action, halfDay }: { id: string; action: 'approve' | 'reject'; halfDay?: boolean }) => {
       const supabase = await import('@/lib/supabase').then((m) => m.supabase)
       const { error } = await supabase
         .from('attendance_records')
         .update({
           early_checkout_status: action === 'approve' ? 'approved' : 'rejected',
+          ...(action === 'approve' ? { status: halfDay ? 'half_day' : 'present' } : {}),
           ...(action === 'reject' ? { status: 'absent' } : {}),
         })
         .eq('id', id)
@@ -384,9 +386,25 @@ function EarlyCheckoutsTab() {
                     <div className="flex gap-2 shrink-0">
                       <Button
                         size="sm"
+                        variant="outline"
+                        disabled={resolveMutation.isPending}
+                        onClick={() => {
+                          setHalfDayIds((prev) => {
+                            const next = new Set(prev)
+                            if (next.has(rec.id)) next.delete(rec.id)
+                            else next.add(rec.id)
+                            return next
+                          })
+                        }}
+                        className={halfDayIds.has(rec.id) ? 'border-amber-500 bg-amber-50 text-amber-700' : ''}
+                      >
+                        {halfDayIds.has(rec.id) ? 'Half Day' : 'Full Day'}
+                      </Button>
+                      <Button
+                        size="sm"
                         className="bg-green-600 hover:bg-green-700"
                         disabled={resolveMutation.isPending}
-                        onClick={() => resolveMutation.mutate({ id: rec.id, action: 'approve' })}
+                        onClick={() => resolveMutation.mutate({ id: rec.id, action: 'approve', halfDay: halfDayIds.has(rec.id) })}
                       >
                         <CheckCircle2 className="mr-1 h-3.5 w-3.5" />Approve
                       </Button>
