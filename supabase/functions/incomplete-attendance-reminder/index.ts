@@ -16,6 +16,7 @@ Deno.serve(async (req: Request) => {
       .eq('date', yesterday)
       .eq('status', 'incomplete')
       .neq('employees.role', 'owner')
+      .neq('is_manually_entered', true)
 
     if (!incomplete || incomplete.length === 0) {
       return ok({ processed: 0 })

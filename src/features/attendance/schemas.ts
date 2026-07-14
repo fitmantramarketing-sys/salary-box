@@ -21,7 +21,8 @@ export const manualAttendanceSchema = z.object({
   date: z.string().min(1, 'Date is required'),
   check_in_time: z.string().optional(),
   check_out_time: z.string().optional(),
-  is_wfh: z.boolean().default(false),
+  is_wfh: z.boolean().optional(),
+  manual_status: z.enum(['present', 'half_day', 'absent']).optional(),
   reason: z.string().min(5, 'Please provide a reason'),
 }).superRefine((data, ctx) => {
   if (data.check_in_time && new Date(data.check_in_time) > new Date()) {
@@ -29,6 +30,9 @@ export const manualAttendanceSchema = z.object({
   }
   if (data.check_out_time && new Date(data.check_out_time) > new Date()) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Cannot be in the future', path: ['check_out_time'] })
+  }
+  if (!data.manual_status && !data.is_wfh && !data.check_in_time && !data.check_out_time) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Select a status or provide check-in/check-out times', path: ['manual_status'] })
   }
 })
 export type ManualAttendanceForm = z.infer<typeof manualAttendanceSchema>

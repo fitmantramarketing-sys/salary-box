@@ -27,6 +27,7 @@ Deno.serve(async (req: Request) => {
       .not('check_in_time', 'is', null)
       .is('check_out_time', null)
       .neq('employees.role', 'owner')
+      .neq('is_manually_entered', true)
 
     if (!incomplete || incomplete.length === 0) {
       return ok({ processed: 0 })

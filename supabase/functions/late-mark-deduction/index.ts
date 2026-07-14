@@ -44,13 +44,14 @@ Deno.serve(async (req: Request) => {
     let processed = 0
 
     for (const emp of employees) {
-      const { data: lateRecord } = await supabase
-        .from('attendance_records')
-        .select('is_late, shift_id')
-        .eq('employee_id', emp.id)
-        .eq('is_late', true)
-        .gte('date', monthStart)
-        .lt('date', monthEnd)
+        const { data: lateRecord } = await supabase
+          .from('attendance_records')
+          .select('is_late, shift_id')
+          .eq('employee_id', emp.id)
+          .eq('is_late', true)
+          .neq('is_manually_entered', true)
+          .gte('date', monthStart)
+          .lt('date', monthEnd)
 
       if (!lateRecord || lateRecord.length === 0) continue
 

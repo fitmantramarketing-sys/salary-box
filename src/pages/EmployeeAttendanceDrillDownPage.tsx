@@ -16,7 +16,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
@@ -27,6 +26,15 @@ import {
 import { Loader2, ArrowLeft, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
+const STATUS_OPTIONS = [
+  { value: 'present', label: 'Present' },
+  { value: 'half_day', label: 'Half Day' },
+  { value: 'absent', label: 'Absent' },
+  { value: 'wfh', label: 'WFH' },
+] as const
+
+type EntryType = 'present' | 'half_day' | 'absent' | 'wfh' | null
+
 export default function EmployeeAttendanceDrillDownPage() {
   const { employeeId } = useParams<{ employeeId: string }>()
   const navigate = useNavigate()
@@ -35,6 +43,7 @@ export default function EmployeeAttendanceDrillDownPage() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [entryType, setEntryType] = useState<EntryType>(null)
 
   const { data: employee, isLoading: empLoading } = useEmployee(employeeId ?? '')
 
@@ -52,32 +61,35 @@ export default function EmployeeAttendanceDrillDownPage() {
       toast.success('Manual attendance recorded')
       setDialogOpen(false)
       form.reset()
+      setEntryType(null)
     },
     onError: (e: Error) => toast.error(e.message),
   })
 
   const form = useForm<ManualAttendanceForm>({
     resolver: zodResolver(manualAttendanceSchema),
-    defaultValues: { employee_id: employeeId ?? '', date: '', reason: '', is_wfh: false },
+    defaultValues: { employee_id: employeeId ?? '', date: '', reason: '' },
   })
 
+  const showTimes = entryType === 'present' || entryType === 'half_day'
+
   const onSubmit = async (values: ManualAttendanceForm) => {
-    if (!values.check_in_time && !values.check_out_time && !values.is_wfh) {
-      toast.error('Provide at least check-in, check-out, or mark WFH')
+    if (!entryType) {
+      toast.error('Select a status type')
       return
     }
-    // Convert datetime-local values (local time, no timezone) to UTC ISO strings
-    // so timestamptz columns store the correct absolute time
+    const checkInIso = values.check_in_time ? new Date(values.check_in_time).toISOString() : undefined
+    const checkOutIso = values.check_out_time ? new Date(values.check_out_time).toISOString() : undefined
     const payload = {
-      ...values,
-      check_in_time: values.check_in_time
-        ? new Date(values.check_in_time).toISOString()
-        : undefined,
-      check_out_time: values.check_out_time
-        ? new Date(values.check_out_time).toISOString()
-        : undefined,
+      employee_id: values.employee_id,
+      date: values.date,
+      reason: values.reason,
+      check_in_time: checkInIso,
+      check_out_time: checkOutIso,
+      is_wfh: entryType === 'wfh',
+      manual_status: entryType === 'wfh' ? undefined : entryType,
     }
-    manualMutation.mutate(payload)
+    manualMutation.mutate(payload as unknown as ManualAttendanceForm)
   }
 
   if (empLoading || recLoading) {
@@ -129,28 +141,45 @@ export default function EmployeeAttendanceDrillDownPage() {
                   <Input type="date" {...form.register('date')} />
                   {form.formState.errors.date && <p className="text-xs text-red-500">{form.formState.errors.date.message}</p>}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Check-in</Label>
-                    <Input type="datetime-local" {...form.register('check_in_time')} />
-                    {form.formState.errors.check_in_time && <p className="text-xs text-red-500">{form.formState.errors.check_in_time.message}</p>}
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {STATUS_OPTIONS.map((opt) => (
+                      <Button
+                        key={opt.value}
+                        type="button"
+                        variant={entryType === opt.value ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setEntryType(opt.value)}
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
                   </div>
-                  <div className="space-y-2">
-                    <Label>Check-out</Label>
-                    <Input type="datetime-local" {...form.register('check_out_time')} />
-                    {form.formState.errors.check_out_time && <p className="text-xs text-red-500">{form.formState.errors.check_out_time.message}</p>}
+                  {form.formState.errors.manual_status && (
+                    <p className="text-xs text-red-500">{form.formState.errors.manual_status.message}</p>
+                  )}
+                </div>
+                {showTimes && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Check-in <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                      <Input type="datetime-local" {...form.register('check_in_time')} />
+                      {form.formState.errors.check_in_time && <p className="text-xs text-red-500">{form.formState.errors.check_in_time.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Check-out <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                      <Input type="datetime-local" {...form.register('check_out_time')} />
+                      {form.formState.errors.check_out_time && <p className="text-xs text-red-500">{form.formState.errors.check_out_time.message}</p>}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch checked={form.watch('is_wfh')} onCheckedChange={(v) => form.setValue('is_wfh', v)} />
-                  <Label>Work From Home</Label>
-                </div>
+                )}
                 <div className="space-y-2">
                   <Label>Reason</Label>
                   <Textarea {...form.register('reason')} placeholder="Why was this entered manually?" />
                   {form.formState.errors.reason && <p className="text-xs text-red-500">{form.formState.errors.reason.message}</p>}
                 </div>
-                <Button type="submit" className="w-full" disabled={manualMutation.isPending}>
+                <Button type="submit" className="w-full" disabled={manualMutation.isPending || !entryType}>
                   {manualMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Entry
                 </Button>
