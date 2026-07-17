@@ -1275,57 +1275,57 @@ export type Database = {
       }
       location_snapshots: {
         Row: {
-          id: string
-          employee_id: string
           action: string
+          attendance_record_id: string | null
+          created_at: string
+          employee_id: string
+          error_code: string | null
+          id: string
+          inside_geofence: boolean | null
+          ip: unknown
           latitude: number | null
           longitude: number | null
-          inside_geofence: boolean | null
-          ip: unknown | null
           successful: boolean
-          attendance_record_id: string | null
-          error_code: string | null
-          created_at: string
         }
         Insert: {
-          id?: string
-          employee_id: string
           action: string
+          attendance_record_id?: string | null
+          created_at?: string
+          employee_id: string
+          error_code?: string | null
+          id?: string
+          inside_geofence?: boolean | null
+          ip?: unknown
           latitude?: number | null
           longitude?: number | null
-          inside_geofence?: boolean | null
-          ip?: unknown | null
           successful?: boolean
-          attendance_record_id?: string | null
-          error_code?: string | null
-          created_at?: string
         }
         Update: {
-          id?: string
-          employee_id?: string
           action?: string
+          attendance_record_id?: string | null
+          created_at?: string
+          employee_id?: string
+          error_code?: string | null
+          id?: string
+          inside_geofence?: boolean | null
+          ip?: unknown
           latitude?: number | null
           longitude?: number | null
-          inside_geofence?: boolean | null
-          ip?: unknown | null
           successful?: boolean
-          attendance_record_id?: string | null
-          error_code?: string | null
-          created_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "location_snapshots_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "location_snapshots_attendance_record_id_fkey"
             columns: ["attendance_record_id"]
             isOneToOne: false
             referencedRelation: "attendance_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_snapshots_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -1577,6 +1577,7 @@ export type Database = {
         | "holiday"
         | "weekly_off"
         | "incomplete"
+        | "late"
       employment_status:
         | "active"
         | "on_probation"
@@ -1738,6 +1739,7 @@ export const Constants = {
         "holiday",
         "weekly_off",
         "incomplete",
+        "late",
       ],
       employment_status: [
         "active",

@@ -15,6 +15,7 @@ const STATUS_CLASS: Record<string, string> = {
   work_from_home: 'text-blue-600 bg-blue-50',
   on_leave: 'text-purple-600 bg-purple-50',
   half_day: 'text-orange-600 bg-orange-50',
+  late: 'text-rose-700 bg-rose-50',
   holiday: 'text-gray-500 bg-gray-100',
   weekly_off: 'text-gray-400 bg-gray-50',
   incomplete: 'text-yellow-600 bg-yellow-50',
@@ -95,7 +96,7 @@ export default function ReportsAttendancePage() {
     const incomplete = pastReport.filter((r) => r.status === 'incomplete').length
     const halfDay = pastReport.filter((r) => r.status === 'half_day').length
     const onLeave = pastReport.filter((r) => r.status === 'on_leave').length
-    const late = pastReport.filter((r) => r.isLate).length
+    const late = pastReport.filter((r) => r.status === 'late' || r.isLate).length
     const holiday = pastReport.filter((r) => r.status === 'holiday').length
     const weeklyOff = pastReport.filter((r) => r.status === 'weekly_off').length
 
@@ -127,7 +128,7 @@ export default function ReportsAttendancePage() {
                 { label: 'Incomplete', count: incomplete, cls: 'text-yellow-700 bg-yellow-50' },
                 { label: 'Half Day', count: halfDay, cls: 'text-orange-700 bg-orange-50' },
                 { label: 'On Leave', count: onLeave, cls: 'text-purple-700 bg-purple-50' },
-                { label: 'Late', count: late, cls: 'text-yellow-700 bg-yellow-50' },
+                { label: 'Late', count: late, cls: 'text-rose-700 bg-rose-50' },
                 { label: 'Holiday', count: holiday, cls: 'text-gray-500 bg-gray-100' },
                 { label: 'Weekly Off', count: weeklyOff, cls: 'text-gray-400 bg-gray-50' },
               ].map((item) => (

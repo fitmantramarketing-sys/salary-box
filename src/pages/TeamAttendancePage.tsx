@@ -60,6 +60,7 @@ const STATUS_CLASSES: Record<string, string> = {
   present: 'bg-green-400',
   absent: 'bg-red-400',
   half_day: 'bg-orange-400',
+  late: 'bg-rose-700',
   work_from_home: 'bg-blue-400',
   on_leave: 'bg-purple-400',
   holiday: 'bg-gray-300',

@@ -130,10 +130,9 @@ export function computeStatus(
   }
 
   // Rules:
-  //   Before shift start  → present
-  //   0–5 min after start → present (no late mark)
-  //   5–20 min after      → half_day + late
-  //   >20 min after       → absent + late
+  //   Before shift start     → present
+  //   0–5 min after start    → present (no late mark)
+  //   >5 min after start     → late
 
   if (diffMin <= 0) {
     return { status: 'present', total_hours: totalHours, is_late: false }
@@ -143,11 +142,7 @@ export function computeStatus(
     return { status: 'present', total_hours: totalHours, is_late: false }
   }
 
-  if (diffMin <= 20) {
-    return { status: 'half_day', total_hours: totalHours, is_late: true }
-  }
-
-  return { status: 'absent', total_hours: totalHours, is_late: true }
+  return { status: 'late', total_hours: totalHours, is_late: true }
 }
 
 export function parseTime(time: string): number {

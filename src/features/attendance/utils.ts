@@ -47,6 +47,7 @@ export function getAttendanceStatusLabel(status: AttendanceStatus): string {
     present: 'Present',
     absent: 'Absent',
     half_day: 'Half Day',
+    late: 'Late',
     on_leave: 'On Leave',
     holiday: 'Holiday',
     work_from_home: 'WFH',

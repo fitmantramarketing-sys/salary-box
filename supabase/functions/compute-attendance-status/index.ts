@@ -91,7 +91,7 @@ Deno.serve(async (req: Request) => {
           //   1. Manually entered (regularization/manual entry) — respect human-set status
           //   2. Auto-checkout set absent (no manual checkout) — keep absent
           //   3. Normal auto-computed record — apply computed status
-          if (!existing.is_manually_entered && !['absent', 'half_day', 'on_leave', 'work_from_home'].includes(existing.status ?? '')) {
+          if (!existing.is_manually_entered && !['on_leave', 'work_from_home'].includes(existing.status ?? '')) {
             updatePayload.status = result.status
           }
 

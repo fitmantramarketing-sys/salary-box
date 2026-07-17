@@ -14,6 +14,7 @@ const STATUS_STYLES: Record<string, string> = {
   work_from_home: 'text-blue-700 bg-blue-50 border-blue-200',
   on_leave: 'text-purple-700 bg-purple-50 border-purple-200',
   half_day: 'text-orange-700 bg-orange-50 border-orange-200',
+  late: 'text-rose-700 bg-rose-50 border-rose-200',
   holiday: 'text-gray-500 bg-gray-100 border-gray-200',
   weekly_off: 'text-gray-400 bg-gray-50 border-gray-200',
 }
@@ -24,6 +25,7 @@ const STATUS_CLASS: Record<string, string> = {
   work_from_home: 'text-blue-600 bg-blue-50',
   on_leave: 'text-purple-600 bg-purple-50',
   half_day: 'text-orange-600 bg-orange-50',
+  late: 'text-rose-700 bg-rose-50',
   holiday: 'text-gray-500 bg-gray-100',
   weekly_off: 'text-gray-400 bg-gray-50',
 }
