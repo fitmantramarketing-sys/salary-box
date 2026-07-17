@@ -15,6 +15,7 @@ import { callEdgeFunction } from '@/lib/edge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { TimePicker } from '@/components/ui/TimePicker'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
@@ -168,12 +169,18 @@ export default function EmployeeAttendanceDrillDownPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Check-in <span className="text-xs text-muted-foreground">(optional)</span></Label>
-                      <Input type="time" {...form.register('check_in_time')} />
+                      <TimePicker
+                        value={form.watch('check_in_time')}
+                        onChange={(v) => form.setValue('check_in_time', v)}
+                      />
                       {form.formState.errors.check_in_time && <p className="text-xs text-red-500">{form.formState.errors.check_in_time.message}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label>Check-out <span className="text-xs text-muted-foreground">(optional)</span></Label>
-                      <Input type="time" {...form.register('check_out_time')} />
+                      <TimePicker
+                        value={form.watch('check_out_time')}
+                        onChange={(v) => form.setValue('check_out_time', v)}
+                      />
                       {form.formState.errors.check_out_time && <p className="text-xs text-red-500">{form.formState.errors.check_out_time.message}</p>}
                     </div>
                   </div>

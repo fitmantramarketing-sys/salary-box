@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { TimePicker } from '@/components/ui/TimePicker'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -218,14 +219,20 @@ function NewRequestDialog() {
           </div>
           <div className="space-y-2">
             <Label>Requested Check-in (optional)</Label>
-            <Input type="time" {...form.register('requested_check_in')} />
+            <TimePicker
+              value={form.watch('requested_check_in')}
+              onChange={(v) => form.setValue('requested_check_in', v)}
+            />
             {form.formState.errors.requested_check_in && (
               <p className="text-xs text-red-500">{form.formState.errors.requested_check_in.message}</p>
             )}
           </div>
           <div className="space-y-2">
             <Label>Requested Check-out (optional)</Label>
-            <Input type="time" {...form.register('requested_check_out')} />
+            <TimePicker
+              value={form.watch('requested_check_out')}
+              onChange={(v) => form.setValue('requested_check_out', v)}
+            />
             {form.formState.errors.requested_check_out && (
               <p className="text-xs text-red-500">{form.formState.errors.requested_check_out.message}</p>
             )}
