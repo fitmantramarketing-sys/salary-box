@@ -78,8 +78,12 @@ export default function EmployeeAttendanceDrillDownPage() {
       toast.error('Select a status type')
       return
     }
-    const checkInIso = values.check_in_time ? new Date(values.check_in_time).toISOString() : undefined
-    const checkOutIso = values.check_out_time ? new Date(values.check_out_time).toISOString() : undefined
+    const checkInIso = values.check_in_time && values.date
+      ? new Date(`${values.date}T${values.check_in_time}`).toISOString()
+      : undefined
+    const checkOutIso = values.check_out_time && values.date
+      ? new Date(`${values.date}T${values.check_out_time}`).toISOString()
+      : undefined
     const payload = {
       employee_id: values.employee_id,
       date: values.date,
@@ -164,12 +168,12 @@ export default function EmployeeAttendanceDrillDownPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Check-in <span className="text-xs text-muted-foreground">(optional)</span></Label>
-                      <Input type="datetime-local" {...form.register('check_in_time')} />
+                      <Input type="time" {...form.register('check_in_time')} />
                       {form.formState.errors.check_in_time && <p className="text-xs text-red-500">{form.formState.errors.check_in_time.message}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label>Check-out <span className="text-xs text-muted-foreground">(optional)</span></Label>
-                      <Input type="datetime-local" {...form.register('check_out_time')} />
+                      <Input type="time" {...form.register('check_out_time')} />
                       {form.formState.errors.check_out_time && <p className="text-xs text-red-500">{form.formState.errors.check_out_time.message}</p>}
                     </div>
                   </div>

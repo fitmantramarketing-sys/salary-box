@@ -132,11 +132,11 @@ function NewRequestDialog() {
       // so timestamptz columns store the correct absolute time
       const payload = {
         ...values,
-        requested_check_in: values.requested_check_in
-          ? new Date(values.requested_check_in).toISOString()
+        requested_check_in: values.requested_check_in && selectedDate
+          ? new Date(`${selectedDate}T${values.requested_check_in}`).toISOString()
           : undefined,
-        requested_check_out: values.requested_check_out
-          ? new Date(values.requested_check_out).toISOString()
+        requested_check_out: values.requested_check_out && selectedDate
+          ? new Date(`${selectedDate}T${values.requested_check_out}`).toISOString()
           : undefined,
       }
       await submitReg.mutateAsync(payload)
@@ -218,14 +218,14 @@ function NewRequestDialog() {
           </div>
           <div className="space-y-2">
             <Label>Requested Check-in (optional)</Label>
-            <Input type="datetime-local" {...form.register('requested_check_in')} />
+            <Input type="time" {...form.register('requested_check_in')} />
             {form.formState.errors.requested_check_in && (
               <p className="text-xs text-red-500">{form.formState.errors.requested_check_in.message}</p>
             )}
           </div>
           <div className="space-y-2">
             <Label>Requested Check-out (optional)</Label>
-            <Input type="datetime-local" {...form.register('requested_check_out')} />
+            <Input type="time" {...form.register('requested_check_out')} />
             {form.formState.errors.requested_check_out && (
               <p className="text-xs text-red-500">{form.formState.errors.requested_check_out.message}</p>
             )}
@@ -339,7 +339,7 @@ function EarlyCheckoutsTab() {
         .from('attendance_records')
         .update({
           early_checkout_status: action === 'approve' ? 'approved' : 'rejected',
-          ...(action === 'approve' ? { status: halfDay ? 'half_day' : 'present' } : {}),
+          ...(action === 'approve' ? { status: halfDay ? 'half_day' : 'present', is_manually_entered: true } : {}),
           ...(action === 'reject' ? { status: 'absent' } : {}),
         })
         .eq('id', id)
