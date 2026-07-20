@@ -76,7 +76,6 @@ function GeofenceLayer({ geofences }: { geofences: GeofenceRow[] | undefined }) 
         dashArray: '8, 6',
       }).addTo(map)
 
-      circle.bindTooltip(g.label, { direction: 'center', permanent: true })
       circles.push(circle)
 
       const marker = L.marker(center, {
@@ -88,7 +87,6 @@ function GeofenceLayer({ geofences }: { geofences: GeofenceRow[] | undefined }) 
         }),
       }).addTo(map)
 
-      marker.bindTooltip(g.label, { direction: 'top', permanent: true })
       markers.push(marker)
 
       bounds.extend(center)
