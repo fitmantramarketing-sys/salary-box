@@ -18,7 +18,7 @@ export type AttendanceReportRow = {
 export type HeatmapRow = {
   departmentId: string
   departmentName: string
-  dayAttendance: { day: number; present: number; total: number; pct: number }[]
+  dayAttendance: { day: number; present: number; total: number; pct: number; type: 'regular' | 'holiday' | 'weekly_off' }[]
 }
 
 export type HeadcountRow = {
@@ -150,7 +150,7 @@ export async function fetchHeatmapData(
     deptQuery = deptQuery.in('id', departmentIds)
   }
 
-  const [deptRes, empRes, attRes] = await Promise.all([
+  const [deptRes, empRes, attRes, holRes, shiftRes] = await Promise.all([
     deptQuery,
     supabase
       .from('employees')
@@ -162,15 +162,30 @@ export async function fetchHeatmapData(
       .select('employee_id, date, status')
       .gte('date', from)
       .lte('date', to),
+    supabase
+      .from('holidays')
+      .select('date')
+      .gte('date', from)
+      .lte('date', to),
+    supabase
+      .from('shifts')
+      .select('weekly_off_days')
+      .eq('is_default', true)
+      .limit(1)
+      .maybeSingle(),
   ])
 
   if (deptRes.error) throw deptRes.error
   if (empRes.error) throw empRes.error
   if (attRes.error) throw attRes.error
+  if (holRes.error) throw holRes.error
+  if (shiftRes.error) throw shiftRes.error
 
   const departments = deptRes.data ?? []
   const employees = empRes.data ?? []
   const records = attRes.data ?? []
+  const holidayDates = new Set((holRes.data ?? []).map((h) => h.date))
+  const weeklyOffDays: number[] = shiftRes.data?.weekly_off_days ?? [0]
 
   const deptEmployeeMap = new Map<string, string[]>()
   for (const emp of employees) {
@@ -178,15 +193,6 @@ export async function fetchHeatmapData(
     const arr = deptEmployeeMap.get(emp.department_id) ?? []
     arr.push(emp.id)
     deptEmployeeMap.set(emp.department_id, arr)
-  }
-
-  const dayRecordMap = new Map<string, Set<string>>()
-  for (const r of records) {
-    if (r.status === 'present' || r.status === 'work_from_home' || r.status === 'half_day') {
-      const set = dayRecordMap.get(r.date) ?? new Set()
-      set.add(r.employee_id)
-      dayRecordMap.set(r.date, set)
-    }
   }
 
   const presentStatuses = new Set(['present', 'work_from_home', 'half_day'])
@@ -197,14 +203,19 @@ export async function fetchHeatmapData(
 
     const dayAttendance = Array.from({ length: daysInMonth }, (_, i) => {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`
+      const dayOfWeek = new Date(year, month - 1, i + 1).getDay()
+      const isHoliday = holidayDates.has(dateStr)
+      const isWeeklyOff = !isHoliday && weeklyOffDays.includes(dayOfWeek)
       const presentInDept = records.filter(
         (r) => presentStatuses.has(r.status) && r.date === dateStr && deptEmployees.includes(r.employee_id)
       ).length
+      const total = isHoliday || isWeeklyOff ? 0 : deptEmployeeCount
       return {
         day: i + 1,
-        present: presentInDept,
-        total: deptEmployeeCount,
-        pct: deptEmployeeCount > 0 ? Math.round((presentInDept / deptEmployeeCount) * 100) : 0,
+        present: isHoliday || isWeeklyOff ? 0 : presentInDept,
+        total,
+        pct: total > 0 ? Math.round((presentInDept / total) * 100) : 0,
+        type: isHoliday ? 'holiday' as const : (isWeeklyOff ? 'weekly_off' as const : 'regular' as const),
       }
     })
 

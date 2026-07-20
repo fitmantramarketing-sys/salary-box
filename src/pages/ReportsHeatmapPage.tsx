@@ -50,6 +50,7 @@ export default function ReportsHeatmapPage() {
           { pct: '60-74%', cls: 'bg-yellow-400' },
           { pct: '40-59%', cls: 'bg-orange-400' },
           { pct: '0-39%', cls: 'bg-red-400' },
+          { pct: 'Holiday / Weekly Off', cls: 'bg-gray-200' },
         ].map((l) => (
           <span key={l.cls} className="flex items-center gap-1">
             <span className={cn('inline-block h-3 w-3 rounded-sm', l.cls)} />
@@ -86,7 +87,12 @@ export default function ReportsHeatmapPage() {
                         <td className="sticky left-0 bg-background z-10 p-2 font-medium">{dept.departmentName}</td>
                         {dept.dayAttendance.map((d) => (
                           <td key={d.day} className="p-1 text-center">
-                            {d.total > 0 ? (
+                            {d.type === 'holiday' || d.type === 'weekly_off' ? (
+                              <span
+                                className="inline-block h-5 w-5 sm:h-6 sm:w-6 rounded-sm bg-gray-200"
+                                title={d.type === 'holiday' ? 'Holiday' : 'Weekly Off'}
+                              />
+                            ) : d.total > 0 ? (
                               <span
                                 className={cn('inline-block h-5 w-5 sm:h-6 sm:w-6 rounded-sm', heatColor(d.pct))}
                                 title={`${d.present}/${d.total} (${d.pct}%)`}
