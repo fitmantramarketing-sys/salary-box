@@ -31,7 +31,8 @@ export const manualAttendanceSchema = z.object({
   if (data.check_out_time && new Date(data.check_out_time) > new Date()) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Cannot be in the future', path: ['check_out_time'] })
   }
-  if (!data.manual_status && !data.is_wfh && !data.check_in_time && !data.check_out_time) {
+  if (data.is_wfh) return
+  if (!data.manual_status && !data.check_in_time && !data.check_out_time) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Select a status or provide check-in/check-out times', path: ['manual_status'] })
   }
 })

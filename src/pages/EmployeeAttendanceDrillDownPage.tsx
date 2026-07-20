@@ -69,7 +69,7 @@ export default function EmployeeAttendanceDrillDownPage() {
 
   const form = useForm<ManualAttendanceForm>({
     resolver: zodResolver(manualAttendanceSchema),
-    defaultValues: { employee_id: employeeId ?? '', date: '', reason: '' },
+    defaultValues: { employee_id: employeeId ?? '', date: '', reason: '', is_wfh: false },
   })
 
   const showTimes = entryType === 'present' || entryType === 'half_day'
@@ -155,7 +155,10 @@ export default function EmployeeAttendanceDrillDownPage() {
                         type="button"
                         variant={entryType === opt.value ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => setEntryType(opt.value)}
+                        onClick={() => {
+                          setEntryType(opt.value)
+                          form.setValue('is_wfh', opt.value === 'wfh')
+                        }}
                       >
                         {opt.label}
                       </Button>
