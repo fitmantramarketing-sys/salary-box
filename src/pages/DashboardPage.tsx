@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { LocationMapCard } from '@/features/attendance/components/LocationMapCard'
 
 async function fetchDashboardCounts() {
   const [empRes, leaveRes, regRes] = await Promise.all([
@@ -288,6 +289,8 @@ function HRDashboard() {
         </CardContent>
       </Card>
 
+      <LocationMapCard />
+
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -525,6 +528,8 @@ function EmployeeDashboardView() {
           </Button>
         </CardContent>
       </Card>
+
+      <LocationMapCard />
 
       {/* Leave Balances */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
