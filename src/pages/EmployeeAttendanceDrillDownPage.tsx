@@ -74,6 +74,12 @@ export default function EmployeeAttendanceDrillDownPage() {
 
   const showTimes = entryType === 'present' || entryType === 'half_day'
 
+  const handleManualEntry = (date: string) => {
+    form.setValue('date', date)
+    setEntryType(null)
+    setDialogOpen(true)
+  }
+
   const onSubmit = async (values: ManualAttendanceForm) => {
     if (!entryType) {
       toast.error('Select a status type')
@@ -209,6 +215,7 @@ export default function EmployeeAttendanceDrillDownPage() {
         month={month}
         onPrevMonth={() => { if (month === 1) { setYear(y => y - 1); setMonth(12) } else { setMonth(m => m - 1) } }}
         onNextMonth={() => { if (month === 12) { setYear(y => y + 1); setMonth(1) } else { setMonth(m => m + 1) } }}
+        onManualEntry={handleManualEntry}
       />
       <AttendanceSummaryCards records={records} />
     </div>

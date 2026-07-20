@@ -21,6 +21,7 @@ type Props = {
   month: number
   onPrevMonth: () => void
   onNextMonth: () => void
+  onManualEntry?: (date: string) => void
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -35,7 +36,7 @@ const STATUS_COLORS: Record<string, string> = {
   incomplete: 'bg-yellow-400 hover:bg-yellow-500',
 }
 
-export function AttendanceCalendar({ records, year, month, onPrevMonth, onNextMonth }: Props) {
+export function AttendanceCalendar({ records, year, month, onPrevMonth, onNextMonth, onManualEntry }: Props) {
   const [selectedDay, setSelectedDay] = useState<AttendanceRecord | null>(null)
   const [holidayDates, setHolidayDates] = useState<Set<string>>(new Set())
   const [weeklyOffDays, setWeeklyOffDays] = useState<number[]>([0])
@@ -210,6 +211,22 @@ export function AttendanceCalendar({ records, year, month, onPrevMonth, onNextMo
                   GPS anomaly flagged
                 </div>
               )}
+            </div>
+          )}
+          {onManualEntry && (
+            <div className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  onManualEntry(selectedDay!.date)
+                  setSelectedDay(null)
+                }}
+              >
+                Manual Entry for this day
+              </Button>
             </div>
           )}
         </DialogContent>
