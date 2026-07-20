@@ -279,7 +279,7 @@ export function LocationMapCard() {
             {isLoading ? (
               <Skeleton className="h-[300px] rounded-lg" />
             ) : (
-              <div className="h-[300px] rounded-lg border overflow-hidden relative">
+              <div className="h-[300px] rounded-lg border overflow-hidden relative z-0">
                 <MapContainer center={center} zoom={13} className="h-full w-full" scrollWheelZoom={true}>
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
