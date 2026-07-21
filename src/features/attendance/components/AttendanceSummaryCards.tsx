@@ -16,10 +16,10 @@ export function AttendanceSummaryCards({ records }: Props) {
 
   const items = [
     { label: 'Present', count: present, className: 'bg-green-50 text-green-700' },
-    { label: 'Absent', count: absent, className: 'bg-rose-50 text-rose-700' },
+    { label: 'Absent', count: absent, className: 'bg-red-50 text-red-700' },
     { label: 'Incomplete', count: incomplete, className: 'bg-yellow-50 text-yellow-700' },
     { label: 'WFH', count: wfh, className: 'bg-blue-50 text-blue-700' },
-    { label: 'Late', count: late, className: 'bg-red-50 text-red-700' },
+    { label: 'Late', count: late, className: 'bg-green-50 text-green-700' },
     { label: 'On Leave', count: onLeave, className: 'bg-purple-50 text-purple-700' },
     { label: 'Half Day', count: halfDay, className: 'bg-orange-50 text-orange-700' },
   ]

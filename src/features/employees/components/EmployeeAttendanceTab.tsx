@@ -37,9 +37,9 @@ export function EmployeeAttendanceTab({ employeeId }: Props) {
             <p className="text-2xl font-bold text-green-700">{present}</p>
             <p className="text-xs text-green-600">Present</p>
           </div>
-          <div className="rounded-lg border bg-rose-50 p-3 text-center">
-            <p className="text-2xl font-bold text-rose-700">{absent}</p>
-            <p className="text-xs text-rose-600">Absent</p>
+          <div className="rounded-lg border bg-red-50 p-3 text-center">
+            <p className="text-2xl font-bold text-red-700">{absent}</p>
+            <p className="text-xs text-red-600">Absent</p>
           </div>
           <div className="rounded-lg border bg-yellow-50 p-3 text-center">
             <p className="text-2xl font-bold text-yellow-700">{late}</p>

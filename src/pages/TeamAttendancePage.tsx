@@ -58,9 +58,9 @@ async function fetchTeamAttendance(year: number, month: number) {
 
 const STATUS_CLASSES: Record<string, string> = {
   present: 'bg-green-400',
-  absent: 'bg-rose-700',
+  absent: 'bg-red-400',
   half_day: 'bg-orange-400',
-  late: 'bg-red-400',
+  late: 'bg-green-400',
   work_from_home: 'bg-blue-400',
   on_leave: 'bg-purple-400',
   holiday: 'bg-gray-300',
@@ -165,7 +165,7 @@ export default function TeamAttendancePage() {
                   <th key={i} className="p-1.5 text-center font-medium w-8 sm:w-10 border-r border-b">{i + 1}</th>
                 ))}
                 <th className="p-1.5 text-center font-medium text-green-600 min-w-[60px] border-b">P</th>
-                <th className="p-1.5 text-center font-medium text-rose-700 min-w-[60px] border-b">A</th>
+                <th className="p-1.5 text-center font-medium text-red-600 min-w-[60px] border-b">A</th>
                 <th className="p-1.5 text-center font-medium text-yellow-500 min-w-[60px] border-b">I</th>
                 <th className="p-1.5 text-center font-medium text-yellow-600 min-w-[60px] border-b">L</th>
                 <th className="p-1.5 text-center font-medium text-blue-600 min-w-[60px] border-b">WFH</th>
@@ -207,7 +207,7 @@ export default function TeamAttendancePage() {
                       )
                     })}
                     <td className="p-1.5 text-center font-medium text-green-700 border-b">{summary.present}</td>
-                    <td className="p-1.5 text-center font-medium text-rose-700 border-b">{summary.absent}</td>
+                    <td className="p-1.5 text-center font-medium text-red-700 border-b">{summary.absent}</td>
                     <td className="p-1.5 text-center font-medium text-yellow-500 border-b">{summary.incomplete}</td>
                     <td className="p-1.5 text-center font-medium text-yellow-700 border-b">{summary.late}</td>
                     <td className="p-1.5 text-center font-medium text-blue-700 border-b">{summary.wfh}</td>

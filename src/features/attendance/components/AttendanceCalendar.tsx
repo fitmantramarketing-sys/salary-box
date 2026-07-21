@@ -26,9 +26,9 @@ type Props = {
 
 const STATUS_COLORS: Record<string, string> = {
   present: 'bg-green-500 hover:bg-green-600',
-  absent: 'bg-rose-700 hover:bg-rose-800',
+  absent: 'bg-red-500 hover:bg-red-600',
   half_day: 'bg-orange-400 hover:bg-orange-500',
-  late: 'bg-red-500 hover:bg-red-600',
+  late: 'bg-green-500 hover:bg-green-600',
   work_from_home: 'bg-blue-500 hover:bg-blue-600',
   on_leave: 'bg-purple-500 hover:bg-purple-600',
   holiday: 'bg-gray-300 hover:bg-gray-400',
