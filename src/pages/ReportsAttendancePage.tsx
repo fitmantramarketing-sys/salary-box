@@ -11,11 +11,11 @@ import { Loader2, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 
 const STATUS_CLASS: Record<string, string> = {
   present: 'text-green-600 bg-green-50',
-  absent: 'text-red-600 bg-red-50',
+  absent: 'text-rose-700 bg-rose-50',
   work_from_home: 'text-blue-600 bg-blue-50',
   on_leave: 'text-purple-600 bg-purple-50',
   half_day: 'text-orange-600 bg-orange-50',
-  late: 'text-rose-700 bg-rose-50',
+  late: 'text-red-600 bg-red-50',
   holiday: 'text-gray-500 bg-gray-100',
   weekly_off: 'text-gray-400 bg-gray-50',
   incomplete: 'text-yellow-600 bg-yellow-50',
@@ -124,11 +124,11 @@ export default function ReportsAttendancePage() {
               {[
                 { label: 'Present', count: present, cls: 'text-green-700 bg-green-50' },
                 { label: 'WFH', count: wfh, cls: 'text-blue-700 bg-blue-50' },
-                { label: 'Absent', count: absent, cls: 'text-red-700 bg-red-50' },
+                { label: 'Absent', count: absent, cls: 'text-rose-700 bg-rose-50' },
                 { label: 'Incomplete', count: incomplete, cls: 'text-yellow-700 bg-yellow-50' },
                 { label: 'Half Day', count: halfDay, cls: 'text-orange-700 bg-orange-50' },
                 { label: 'On Leave', count: onLeave, cls: 'text-purple-700 bg-purple-50' },
-                { label: 'Late', count: late, cls: 'text-rose-700 bg-rose-50' },
+                { label: 'Late', count: late, cls: 'text-red-700 bg-red-50' },
                 { label: 'Holiday', count: holiday, cls: 'text-gray-500 bg-gray-100' },
                 { label: 'Weekly Off', count: weeklyOff, cls: 'text-gray-400 bg-gray-50' },
               ].map((item) => (
@@ -259,7 +259,7 @@ export default function ReportsAttendancePage() {
                       <TableHead>Department</TableHead>
                       <TableHead className="text-center text-green-700">Present</TableHead>
                       <TableHead className="text-center text-blue-700">WFH</TableHead>
-                      <TableHead className="text-center text-red-700">Absent</TableHead>
+                      <TableHead className="text-center text-rose-700">Absent</TableHead>
                       <TableHead className="text-center text-purple-700">On Leave</TableHead>
                       <TableHead className="text-center text-orange-700">Half Day</TableHead>
                       <TableHead className="text-center text-yellow-700">Late</TableHead>
@@ -273,7 +273,7 @@ export default function ReportsAttendancePage() {
                         <TableCell className="text-sm">{r.departmentName ?? '—'}</TableCell>
                         <TableCell className="text-center font-medium text-green-700">{r.presentDays}</TableCell>
                         <TableCell className="text-center font-medium text-blue-700">{r.wfhDays}</TableCell>
-                        <TableCell className="text-center font-medium text-red-700">{r.absentDays}</TableCell>
+                        <TableCell className="text-center font-medium text-rose-700">{r.absentDays}</TableCell>
                         <TableCell className="text-center font-medium text-purple-700">{r.onLeaveDays}</TableCell>
                         <TableCell className="text-center font-medium text-orange-700">{r.halfDayDays}</TableCell>
                         <TableCell className="text-center font-medium text-yellow-700">{r.lateMarks}</TableCell>
