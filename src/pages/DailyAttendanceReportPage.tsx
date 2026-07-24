@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { fetchDailyAttendance, type DailyAttendanceRow } from '@/features/reports/api'
 import { formatHours } from '@/features/attendance/utils'
@@ -75,10 +76,11 @@ function getStatusLabel(status: string): string {
 }
 
 function MobileCard({ r }: { r: DailyAttendanceRow }) {
+  const navigate = useNavigate()
   const isOff = r.status === 'absent' || r.status === 'holiday' || r.status === 'weekly_off'
 
   return (
-    <Card className={isOff ? 'opacity-70' : ''}>
+    <Card className={isOff ? 'opacity-70 cursor-pointer' : 'cursor-pointer'} onClick={() => navigate(`/attendance/${r.employeeId}`)}>
       <CardContent className="p-3 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -121,6 +123,7 @@ function MobileCard({ r }: { r: DailyAttendanceRow }) {
 }
 
 export default function DailyAttendanceReportPage() {
+  const navigate = useNavigate()
   const [date, setDate] = useState(new Date())
 
   const dateStr = dateToStr(date)
@@ -186,7 +189,7 @@ export default function DailyAttendanceReportPage() {
                     </TableHeader>
                     <TableBody>
                       {rows.map((r) => (
-                        <TableRow key={r.employeeId}>
+                        <TableRow key={r.employeeId} className="cursor-pointer hover:bg-accent/30" onClick={() => navigate(`/attendance/${r.employeeId}`)}>
                           <TableCell className="font-medium whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <span>{r.employeeName}</span>

@@ -7,6 +7,9 @@ import { useEmployee } from '@/features/employees/hooks'
 import { AttendanceCalendar } from '@/features/attendance/components/AttendanceCalendar'
 import { AttendanceSummaryCards } from '@/features/attendance/components/AttendanceSummaryCards'
 import { fetchMyAttendance } from '@/features/attendance/api'
+import { fetchSelfAttendance } from '@/features/reports/api'
+import { Card, CardContent } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   manualAttendanceSchema,
   type ManualAttendanceForm,
@@ -26,6 +29,18 @@ import {
 } from '@/components/ui/dialog'
 import { Loader2, ArrowLeft, Plus } from 'lucide-react'
 import { toast } from 'sonner'
+
+const STATUS_CLASS: Record<string, string> = {
+  present: 'text-green-600 bg-green-50',
+  absent: 'text-red-600 bg-red-50',
+  work_from_home: 'text-blue-600 bg-blue-50',
+  on_leave: 'text-purple-600 bg-purple-50',
+  half_day: 'text-orange-600 bg-orange-50',
+  late: 'text-green-600 bg-green-50',
+  holiday: 'text-gray-500 bg-gray-100',
+  weekly_off: 'text-gray-400 bg-gray-50',
+  incomplete: 'text-yellow-600 bg-yellow-50',
+}
 
 const STATUS_OPTIONS = [
   { value: 'present', label: 'Present' },
@@ -51,6 +66,12 @@ export default function EmployeeAttendanceDrillDownPage() {
   const { data: records, isLoading: recLoading } = useQuery({
     queryKey: ['attendance', 'employee', employeeId, year, month],
     queryFn: () => fetchMyAttendance(employeeId!, year, month),
+    enabled: !!employeeId,
+  })
+
+  const { data: selfReport } = useQuery({
+    queryKey: ['reports', 'self-attendance', employeeId, year, month],
+    queryFn: () => fetchSelfAttendance(employeeId!, year, month),
     enabled: !!employeeId,
   })
 
@@ -218,6 +239,48 @@ export default function EmployeeAttendanceDrillDownPage() {
         onManualEntry={handleManualEntry}
       />
       <AttendanceSummaryCards records={records} />
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Day</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Check In</TableHead>
+                  <TableHead>Check Out</TableHead>
+                  <TableHead>Hours</TableHead>
+                  <TableHead>Late</TableHead>
+                  <TableHead>WFH</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(selfReport ?? []).map((r) => {
+                  const isFuture = r.date > new Date().toISOString().split('T')[0]
+                  return (
+                  <TableRow key={r.date} className={isFuture ? 'opacity-50' : ''}>
+                    <TableCell className="font-mono text-xs">{r.date}</TableCell>
+                    <TableCell>{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][r.dayOfWeek]}</TableCell>
+                    <TableCell>
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${isFuture ? 'text-gray-300' : (STATUS_CLASS[r.status] ?? 'text-gray-500')}`}>
+                        {r.status.replace(/_/g, ' ')}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{r.checkIn ? new Date(r.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.checkOut ? new Date(r.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</TableCell>
+                    <TableCell>{r.totalHours?.toFixed(1) ?? '—'}</TableCell>
+                    <TableCell>{r.isLate ? 'Yes' : 'No'}</TableCell>
+                    <TableCell>{r.isWfh ? 'Yes' : 'No'}</TableCell>
+                  </TableRow>
+                )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
