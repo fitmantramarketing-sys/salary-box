@@ -55,7 +55,7 @@ export default function ReportsAttendancePage() {
 
   function exportCSV() {
     if (!report) return
-    const headers = ['Employee', 'Code', 'Department', 'Present', 'WFH', 'Absent', 'On Leave', 'Half Day', 'Late Marks']
+    const headers = ['Team Member', 'Code', 'Department', 'Present', 'WFH', 'Absent', 'On Leave', 'Half Day', 'Late Marks']
     const rows = report.map((r) => [
       r.employeeName, r.employeeCode, r.departmentName ?? '',
       String(r.presentDays), String(r.wfhDays), String(r.absentDays),
@@ -66,7 +66,7 @@ export default function ReportsAttendancePage() {
 
   function exportAbsenteeismCSV() {
     if (!absenteeismData) return
-    const headers = ['Employee', 'Code', 'Department', 'Absent Days', 'Total Work Days', 'Absence Rate (%)']
+    const headers = ['Team Member', 'Code', 'Department', 'Absent Days', 'Total Work Days', 'Absence Rate (%)']
     const rows = absenteeismData.map((r) => [
       r.employeeName, r.employeeCode, r.departmentName ?? '',
       String(r.absentDays), String(r.totalWorkDays), String(r.absenceRate),
@@ -254,7 +254,7 @@ export default function ReportsAttendancePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="sticky left-0 bg-background z-10">Employee</TableHead>
+                      <TableHead className="sticky left-0 bg-background z-10">Team Member</TableHead>
                       <TableHead className="sticky left-[180px] bg-background z-10">Code</TableHead>
                       <TableHead>Department</TableHead>
                       <TableHead className="text-center text-green-700">Present</TableHead>
@@ -306,7 +306,7 @@ export default function ReportsAttendancePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="sticky left-0 bg-background z-10">Employee</TableHead>
+                      <TableHead className="sticky left-0 bg-background z-10">Team Member</TableHead>
                       <TableHead className="sticky left-[180px] bg-background z-10">Code</TableHead>
                       <TableHead>Department</TableHead>
                       <TableHead className="text-center">Absent Days</TableHead>

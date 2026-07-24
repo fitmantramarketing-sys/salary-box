@@ -81,13 +81,13 @@ function OwnerDashboard() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Team Members</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{counts?.totalEmployees ?? 0}</div>
-          <p className="text-xs text-muted-foreground">Active employees</p>
-          <Link to="/employees" className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1">
+          <p className="text-xs text-muted-foreground">Active team members</p>
+          <Link to="/team-members" className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1">
             View all <ArrowRight className="h-3 w-3" />
           </Link>
         </CardContent>
@@ -325,7 +325,7 @@ function HRDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{counts?.totalEmployees ?? 0}</div>
-            <p className="text-xs text-muted-foreground">Active employees</p>
+            <p className="text-xs text-muted-foreground">Active team members</p>
             <Link to="/attendance/team" className="text-xs text-primary hover:underline mt-2 inline-block">
               View team attendance
             </Link>
@@ -654,8 +654,8 @@ export default function DashboardPage() {
               <Link to="/settings/geofence" className="block text-sm text-primary hover:underline">
                 Geofence Configuration
               </Link>
-              <Link to="/employees" className="block text-sm text-primary hover:underline">
-                Employee Directory
+              <Link to="/team-members" className="block text-sm text-primary hover:underline">
+                Team Member Directory
               </Link>
             </CardContent>
           </Card>

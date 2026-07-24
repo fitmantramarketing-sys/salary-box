@@ -75,7 +75,7 @@ export function EmployeeOverviewTab({ employee }: Props) {
             </div>
             <div className="flex gap-2 shrink-0">
               {canEdit && (isOwner || isHR) && (
-                <Link to={`/employees/${employee.id}/edit`}>
+                <Link to={`/team-members/${employee.id}/edit`}>
                   <Button size="sm" variant="outline" className="w-full sm:w-auto"><Pencil className="mr-2 h-4 w-4" />Edit</Button>
                 </Link>
               )}

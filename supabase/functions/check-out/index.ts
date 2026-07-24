@@ -39,12 +39,12 @@ Deno.serve(async (req: Request) => {
     const now = new Date().toISOString()
     const shift = await resolveShift(actor.actorId, today)
 
-    // Early checkout validation — compare IST minutes
+    // Early checkout validation — compare IST minutes with shift grace
     const effectiveEnd = getEffectiveTimes(shift, today).end_time
     const [eh, em] = effectiveEnd.split(':').map(Number)
     const checkoutMinutes = getISTMinutes(now)
     const endMinutes = eh * 60 + em
-    const isEarly = checkoutMinutes < endMinutes
+    const isEarly = checkoutMinutes < endMinutes - shift.early_checkout_grace_minutes
 
     if (isEarly && !early_checkout_reason) {
       throw {

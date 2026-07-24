@@ -198,10 +198,10 @@ export default function LocationHistoryPage() {
             </div>
             <Select value={employeeId} onValueChange={setEmployeeId}>
               <SelectTrigger className="w-[180px] h-8 text-sm">
-                <SelectValue placeholder="All Employees" />
+                <SelectValue placeholder="All Members" />
               </SelectTrigger>
               <SelectContent className="z-[999]">
-                <SelectItem value="all">All Employees</SelectItem>
+                <SelectItem value="all">All Members</SelectItem>
                 {employees?.map((emp) => (
                   <SelectItem key={emp.id} value={emp.id}>
                     {emp.first_name} {emp.last_name}

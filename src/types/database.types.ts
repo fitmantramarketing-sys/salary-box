@@ -790,6 +790,7 @@ export type Database = {
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           employee_code: string
+          guardian_email: string | null
           employment_status: Database["public"]["Enums"]["employment_status"]
           employment_type: Database["public"]["Enums"]["employment_type"]
           exit_date: string | null
@@ -826,6 +827,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           employee_code: string
+          guardian_email?: string | null
           employment_status?: Database["public"]["Enums"]["employment_status"]
           employment_type?: Database["public"]["Enums"]["employment_type"]
           exit_date?: string | null
@@ -862,6 +864,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           employee_code?: string
+          guardian_email?: string | null
           employment_status?: Database["public"]["Enums"]["employment_status"]
           employment_type?: Database["public"]["Enums"]["employment_type"]
           exit_date?: string | null
@@ -1496,6 +1499,8 @@ export type Database = {
           created_at: string
           end_time: string
           grace_period_minutes: number
+          half_day_threshold_minutes: number
+          early_checkout_grace_minutes: number
           id: string
           is_active: boolean
           is_default: boolean
@@ -1513,6 +1518,8 @@ export type Database = {
           created_at?: string
           end_time: string
           grace_period_minutes?: number
+          half_day_threshold_minutes?: number
+          early_checkout_grace_minutes?: number
           id?: string
           is_active?: boolean
           is_default?: boolean
@@ -1530,6 +1537,8 @@ export type Database = {
           created_at?: string
           end_time?: string
           grace_period_minutes?: number
+          half_day_threshold_minutes?: number
+          early_checkout_grace_minutes?: number
           id?: string
           is_active?: boolean
           is_default?: boolean

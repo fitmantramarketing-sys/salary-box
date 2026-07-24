@@ -30,7 +30,7 @@ export default function ReportsRegularizationPage() {
 
   function exportCSV() {
     if (!report) return
-    const headers = ['Employee', 'Code', 'Date', 'Requested Status', 'Reason', 'Status', 'Reviewer', 'Comment', 'Submitted']
+    const headers = ['Team Member', 'Code', 'Date', 'Requested Status', 'Reason', 'Status', 'Reviewer', 'Comment', 'Submitted']
     const rows = report.map((r) => [
       r.employeeName, r.employeeCode, r.date, r.requestedStatus,
       r.reason, r.status, r.reviewerName ?? '—', r.reviewerComment ?? '—', r.createdAt,
@@ -80,7 +80,7 @@ export default function ReportsRegularizationPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="sticky left-0 bg-background z-10">Employee</TableHead>
+                    <TableHead className="sticky left-0 bg-background z-10">Team Member</TableHead>
                     <TableHead className="sticky left-[160px] bg-background z-10">Code</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Requested Status</TableHead>

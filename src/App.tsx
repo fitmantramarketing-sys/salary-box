@@ -204,19 +204,19 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
 
-              {/* Employees */}
-              <Route path="/employees" element={<EmployeesPage />} />
+              {/* Team Members */}
+              <Route path="/team-members" element={<EmployeesPage />} />
               <Route element={<RequireRole allow={['owner', 'hr']} />}>
                 <Route path="/org-chart" element={<OrgChartPage />} />
               </Route>
               <Route element={<RequireRole allow={['owner']} />}>
-                <Route path="/employees/new" element={<NewEmployeePage />} />
-                <Route path="/employees/bulk-import" element={<BulkImportPage />} />
+                <Route path="/team-members/new" element={<NewEmployeePage />} />
+                <Route path="/team-members/bulk-import" element={<BulkImportPage />} />
               </Route>
               <Route element={<RequireRole allow={['owner', 'hr', 'employee']} />}>
-                <Route path="/employees/:id/edit" element={<EditEmployeePage />} />
+                <Route path="/team-members/:id/edit" element={<EditEmployeePage />} />
               </Route>
-              <Route path="/employees/:id" element={<EmployeeDetailPage />} />
+              <Route path="/team-members/:id" element={<EmployeeDetailPage />} />
 
               {/* Attendance */}
               <Route element={<RequireRole allow={['hr', 'employee']} />}>
@@ -261,10 +261,10 @@ export default function App() {
                 <Route path="/settings/leave-balances" element={<SettingsLeaveBalancesPage />} />
               </Route>
 
-              {/* Employee self-profile */}
-              <Route path="/employees/me" element={<EmployeeSelfProfilePage />} />
+              {/* Team Member self-profile */}
+              <Route path="/team-members/me" element={<EmployeeSelfProfilePage />} />
               <Route element={<RequireRole allow={['owner', 'hr']} />}>
-                <Route path="/employees/profile-edits" element={<ProfileEditReviewsPage />} />
+                <Route path="/team-members/profile-edits" element={<ProfileEditReviewsPage />} />
               </Route>
 
               {/* Reports */}

@@ -34,15 +34,15 @@ type NavGroup = {
 const NAV_GROUPS: NavGroup[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   {
-    label: 'Employees',
+    label: 'Team Members',
     icon: Users,
     roles: ['owner', 'hr', 'system_admin'],
     children: [
-      { label: 'All Employees', href: '/employees', roles: ['owner', 'hr', 'system_admin'] },
-      { label: 'Add Employee', href: '/employees/new', roles: ['owner'] },
-      { label: 'Bulk Import', href: '/employees/bulk-import', roles: ['owner'] },
+      { label: 'All Team Members', href: '/team-members', roles: ['owner', 'hr', 'system_admin'] },
+      { label: 'Add Team Member', href: '/team-members/new', roles: ['owner'] },
+      { label: 'Bulk Import', href: '/team-members/bulk-import', roles: ['owner'] },
       { label: 'Org Chart', href: '/org-chart', roles: ['owner', 'hr'] },
-      { label: 'Profile Edits', href: '/employees/profile-edits', roles: ['owner', 'hr'] },
+      { label: 'Profile Edits', href: '/team-members/profile-edits', roles: ['owner', 'hr'] },
     ],
   },
   {
@@ -103,7 +103,7 @@ function EmployeeNav({ onItemClick }: { onItemClick?: () => void }) {
   return (
     <>
       <NavItem icon={LayoutDashboard} href="/dashboard" label="Dashboard" onClick={onItemClick} />
-      <NavItem icon={User} href="/employees/me" label="My Profile" onClick={onItemClick} />
+      <NavItem icon={User} href="/team-members/me" label="My Profile" onClick={onItemClick} />
       <NavItem icon={Clock} href="/attendance" label="My Attendance" onClick={onItemClick} />
       <NavItem icon={Clock} href="/attendance/regularization" label="Regularization" onClick={onItemClick} />
       <NavGroupItem

@@ -38,7 +38,7 @@ export default function ReportsHeadcountPage() {
 
   function exportCSV() {
     if (!report) return
-    const headers = ['Employee', 'Code', 'Department', 'Designation', 'Type', 'Status', 'Join Date', 'Exit Date']
+    const headers = ['Team Member', 'Code', 'Department', 'Designation', 'Type', 'Status', 'Join Date', 'Exit Date']
     const rows = report.map((r) => [
       r.name, r.employeeCode, r.departmentName ?? '',
       r.designationName ?? '', r.employmentType, r.employmentStatus,
@@ -109,7 +109,7 @@ export default function ReportsHeadcountPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="sticky left-0 bg-background z-10">Employee</TableHead>
+                    <TableHead className="sticky left-0 bg-background z-10">Team Member</TableHead>
                     <TableHead className="sticky left-[180px] bg-background z-10">Code</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Designation</TableHead>

@@ -141,7 +141,7 @@ export default function SettingsLeaveBalancesPage() {
             {isLoading ? (
               <Skeleton className="h-5 w-48" />
             ) : (
-              `Employee Balances (${employees.length} employees)`
+              `Team Member Balances (${employees.length} members)`
             )}
           </CardTitle>
         </CardHeader>
@@ -162,7 +162,7 @@ export default function SettingsLeaveBalancesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="sticky left-0 bg-card z-10 min-w-[200px]">
-                      Employee
+                      Team Member
                     </TableHead>
                     <TableHead className="min-w-[90px]">Code</TableHead>
                     <TableHead className="min-w-[140px]">Department</TableHead>

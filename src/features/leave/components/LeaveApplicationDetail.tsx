@@ -69,7 +69,7 @@ export function LeaveApplicationDetail({ application }: Props) {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-xs text-muted-foreground">Employee</p>
+            <p className="text-xs text-muted-foreground">Team Member</p>
             <p className="font-medium">
               {application.employee?.first_name} {application.employee?.last_name}
               <br />

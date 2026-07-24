@@ -90,8 +90,9 @@ export default function NewEmployeePage() {
       city: '',
       state: '',
       pincode: '',
-      emergency_contact_name: '',
-      emergency_contact_phone: '',
+      guardian_name: '',
+      guardian_phone: '',
+      guardian_email: '',
       department_id: undefined,
       designation_id: undefined,
       reporting_manager_id: undefined,
@@ -114,7 +115,12 @@ export default function NewEmployeePage() {
       const leaveAllocPayload = Object.entries(leaveAllocations)
         .filter(([, days]) => days > 0)
         .map(([leave_type_id, days]) => ({ leave_type_id, days }))
-      const payload = { ...values, leave_allocations: leaveAllocPayload }
+      const payload = {
+        ...values,
+        emergency_contact_name: values.guardian_name,
+        emergency_contact_phone: values.guardian_phone,
+        leave_allocations: leaveAllocPayload,
+      } as CreateEmployeeForm & { emergency_contact_name: string; emergency_contact_phone: string }
       const result = await createEmployee.mutateAsync(payload) as CreateEmployeeResponse
 
       // Upload document if one was chosen
@@ -126,7 +132,7 @@ export default function NewEmployeePage() {
         try {
           await uploadDocument.mutateAsync(fd)
         } catch {
-          toast.error('Employee created but document upload failed')
+          toast.error('Team member created but document upload failed')
         }
       }
 
@@ -144,7 +150,7 @@ export default function NewEmployeePage() {
             is_active: true,
           })
         if (bankError) {
-          toast.error('Employee created but bank details failed to save')
+          toast.error('Team member created but bank details failed to save')
         } else {
           queryClient.invalidateQueries({ queryKey: ['employees', 'bank', result.employee_id] })
           queryClient.invalidateQueries({ queryKey: ['employees', 'detail', result.employee_id] })
@@ -163,7 +169,7 @@ export default function NewEmployeePage() {
 
   function nextStep() {
     if (step === 0) {
-      form.trigger(['first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'gender', 'personal_email', 'address_line1', 'address_line2', 'city', 'state', 'pincode', 'emergency_contact_name', 'emergency_contact_phone'] as const).then((v) => { if (v) setStep(step + 1) })
+      form.trigger(['first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'gender', 'personal_email', 'address_line1', 'address_line2', 'city', 'state', 'pincode', 'guardian_name', 'guardian_phone', 'guardian_email'] as const).then((v) => { if (v) setStep(step + 1) })
     } else if (step === 1) {
       form.trigger(['department_id', 'designation_id', 'reporting_manager_id', 'role', 'employment_type', 'join_date', 'probation_end_date', 'current_salary'] as const).then((v) => { if (v) setStep(step + 1) })
     } else if (step < steps.length - 1) {
@@ -174,10 +180,10 @@ export default function NewEmployeePage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/employees')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/team-members')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-semibold">Add Employee</h1>
+        <h1 className="text-2xl font-semibold">Add Team Member</h1>
       </div>
 
       {/* Step indicator */}
@@ -216,11 +222,11 @@ export default function NewEmployeePage() {
                   <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="date_of_birth" render={({ field }) => (
-                  <FormItem><FormLabel>Date of Birth</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Date of Birth *</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="gender" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Gender</FormLabel>
+                    <FormLabel>Gender *</FormLabel>
                     <FormControl>
                       <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value || undefined)}>
                         <option value="">Select...</option>
@@ -233,13 +239,16 @@ export default function NewEmployeePage() {
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="personal_email" render={({ field }) => (
-                  <FormItem><FormLabel>Personal Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Personal Email *</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="emergency_contact_name" render={({ field }) => (
-                  <FormItem><FormLabel>Emergency Contact</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormField control={form.control} name="guardian_name" render={({ field }) => (
+                  <FormItem><FormLabel>Guardian Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <FormField control={form.control} name="emergency_contact_phone" render={({ field }) => (
-                  <FormItem><FormLabel>Emergency Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormField control={form.control} name="guardian_phone" render={({ field }) => (
+                  <FormItem><FormLabel>Guardian Contact Number *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="guardian_email" render={({ field }) => (
+                  <FormItem><FormLabel>Guardian Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <div className="sm:col-span-2">
                   <FormField control={form.control} name="address_line1" render={({ field }) => (
@@ -309,7 +318,7 @@ export default function NewEmployeePage() {
                     <FormLabel>Role</FormLabel>
                     <FormControl>
                       <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={field.value} onChange={(e) => field.onChange(e.target.value)}>
-                        <option value="employee">Employee</option>
+                        <option value="employee">Team Member</option>
                         <option value="hr">HR</option>
                         <option value="owner">Owner</option>
                         <option value="system_admin">System Admin</option>
@@ -455,7 +464,7 @@ export default function NewEmployeePage() {
           )}
 
           <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => step > 0 ? setStep(step - 1) : navigate('/employees')}>
+            <Button type="button" variant="outline" onClick={() => step > 0 ? setStep(step - 1) : navigate('/team-members')}>
               {step > 0 ? 'Previous' : 'Cancel'}
             </Button>
 
@@ -463,7 +472,7 @@ export default function NewEmployeePage() {
               <Button type="button" disabled={createEmployee.isPending} onClick={form.handleSubmit(onSubmit)}>
                 {createEmployee.isPending ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating…</>
-                ) : 'Create Employee'}
+                ) : 'Create Team Member'}
               </Button>
             ) : (
               <Button type="button" onClick={nextStep}>Next</Button>
@@ -472,10 +481,10 @@ export default function NewEmployeePage() {
         </form>
       </Form>
 
-      <Dialog open={!!successData} onOpenChange={(open) => { if (!open) { setSuccessData(null); navigate('/employees') } }}>
+      <Dialog open={!!successData} onOpenChange={(open) => { if (!open) { setSuccessData(null); navigate('/team-members') } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Employee Created</DialogTitle>
+            <DialogTitle>Team Member Created</DialogTitle>
             <DialogDescription>
               {successData?.employee_code} has been created successfully.
             </DialogDescription>
@@ -495,7 +504,7 @@ export default function NewEmployeePage() {
             <p className="text-xs text-muted-foreground">
               Share this password with the employee. They will be prompted to set a new password on first login.
             </p>
-            <Button className="w-full" onClick={() => { setSuccessData(null); navigate('/employees') }}>
+            <Button className="w-full" onClick={() => { setSuccessData(null); navigate('/team-members') }}>
               Done
             </Button>
           </div>

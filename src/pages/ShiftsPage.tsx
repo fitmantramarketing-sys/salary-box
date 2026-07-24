@@ -103,6 +103,8 @@ function ShiftDialog({
   )
   const [nightShift, setNightShift] = useState(editingShift?.is_night_shift ?? false)
   const [lateThreshold, setLateThreshold] = useState(String(editingShift?.late_mark_threshold ?? 3))
+  const [halfDayThreshold, setHalfDayThreshold] = useState(String(editingShift?.half_day_threshold_minutes ?? 45))
+  const [earlyCheckoutGrace, setEarlyCheckoutGrace] = useState(String(editingShift?.early_checkout_grace_minutes ?? 0))
   const [satEnabled, setSatEnabled] = useState(!!editingShift?.saturday_start_time)
   const [satStartTime, setSatStartTime] = useState(editingShift?.saturday_start_time ?? '10:00')
   const [satEndTime, setSatEndTime] = useState(editingShift?.saturday_end_time ?? '16:00')
@@ -114,6 +116,8 @@ function ShiftDialog({
         start_time: startTime,
         end_time: endTime,
         grace_period_minutes: parseInt(gracePeriod),
+        half_day_threshold_minutes: parseInt(halfDayThreshold),
+        early_checkout_grace_minutes: parseInt(earlyCheckoutGrace),
         break_minutes: parseInt(breakMinutes),
         weekly_off_days: weeklyOff.map(Number),
         is_night_shift: nightShift,
@@ -179,15 +183,28 @@ function ShiftDialog({
             <div className="space-y-2">
               <Label>Grace Period (min)</Label>
               <Input type="number" value={gracePeriod} onChange={(e) => setGracePeriod(e.target.value)} min="0" />
+              <p className="text-[10px] text-muted-foreground">Check-in within this window = present</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Half-Day (min)</Label>
+              <Input type="number" value={halfDayThreshold} onChange={(e) => setHalfDayThreshold(e.target.value)} min="0" />
+              <p className="text-[10px] text-muted-foreground">Minutes after grace → half_day</p>
             </div>
             <div className="space-y-2">
               <Label>Break (min)</Label>
               <Input type="number" value={breakMinutes} onChange={(e) => setBreakMinutes(e.target.value)} min="0" />
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Late Threshold</Label>
+              <Label>Early Checkout Grace (min)</Label>
+              <Input type="number" value={earlyCheckoutGrace} onChange={(e) => setEarlyCheckoutGrace(e.target.value)} min="0" />
+              <p className="text-[10px] text-muted-foreground">Tolerated before requiring a reason</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Late Threshold (marks)</Label>
               <Input type="number" value={lateThreshold} onChange={(e) => setLateThreshold(e.target.value)} min="1" />
-              <p className="text-[10px] text-muted-foreground">Marks before deduction</p>
+              <p className="text-[10px] text-muted-foreground">Marks before leave deduction</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -356,7 +373,7 @@ function EmployeeOverrideDialog({ shifts }: { shifts: ShiftWithDepts[] }) {
         <Button size="sm" variant="outline"><Plus className="mr-2 h-4 w-4" />Add Override</Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Employee Shift Override</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Team Member Shift Override</DialogTitle></DialogHeader>
         <form onSubmit={(e) => { e.preventDefault(); mutation.mutate() }} className="space-y-4">
           <div className="space-y-2">
             <Label>Shift</Label>
@@ -370,7 +387,7 @@ function EmployeeOverrideDialog({ shifts }: { shifts: ShiftWithDepts[] }) {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Employee</Label>
+            <Label>Team Member</Label>
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search employees..." className="mb-2" />
             <div className="max-h-40 overflow-y-auto rounded border">
               {filtered.length === 0 ? (
@@ -608,14 +625,14 @@ export default function ShiftsPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <User className="h-4 w-4" /> Employee Overrides
+            <User className="h-4 w-4" /> Team Member Overrides
           </h2>
           <EmployeeOverrideDialog shifts={shifts ?? []} />
         </div>
         <Card>
           <CardContent className="p-0">
             {!empOverrides || empOverrides.length === 0 ? (
-              <div className="py-8 text-center text-sm text-muted-foreground">No employee overrides yet.</div>
+              <div className="py-8 text-center text-sm text-muted-foreground">No team member overrides yet.</div>
             ) : (
               <div className="divide-y">
                 {empOverrides.map((eo) => (

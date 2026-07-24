@@ -21,7 +21,7 @@ export default function BulkImportPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'employee-import-template.csv'
+    a.download = 'team-member-import-template.csv'
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -34,7 +34,7 @@ export default function BulkImportPage() {
       const res = await bulkImport.mutateAsync(formData)
       setResult(res)
       if (res.success_count > 0) {
-        toast.success(`${res.success_count} employee(s) imported`)
+        toast.success(`${res.success_count} team member(s) imported`)
       }
       if (res.failure_count > 0) {
         toast.error(`${res.failure_count} row(s) had errors`)
@@ -54,10 +54,10 @@ export default function BulkImportPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/employees')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/team-members')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-semibold">Bulk Import Employees</h1>
+        <h1 className="text-2xl font-semibold">Bulk Import Team Members</h1>
       </div>
 
       <Card>
@@ -123,7 +123,7 @@ export default function BulkImportPage() {
             {result.success_count > 0 && (
               <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
                 <CheckCircle2 className="h-5 w-5 shrink-0" />
-                {result.success_count} of {result.total_rows} employee(s) imported successfully.
+                {result.success_count} of {result.total_rows} team member(s) imported successfully.
               </div>
             )}
 

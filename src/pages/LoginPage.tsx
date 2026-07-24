@@ -42,7 +42,7 @@ export default function LoginPage() {
           </CardContent>
         </Card>
         <p className="mt-6 text-center text-xs text-muted-foreground/60">
-          HR Tool &mdash; Internal Employee Management
+          HR Tool &mdash; Internal Team Management
         </p>
       </div>
     </div>

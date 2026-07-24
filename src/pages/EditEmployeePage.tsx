@@ -106,7 +106,7 @@ export default function EditEmployeePage() {
   }
 
   if (!employee) {
-    return <p className="text-muted-foreground">Employee not found</p>
+    return <p className="text-muted-foreground">Team member not found</p>
   }
 
   const empId = employee.id
@@ -124,8 +124,8 @@ export default function EditEmployeePage() {
         probation_end_date: values.probation_end_date || null,
         current_salary: values.current_salary || null,
       })
-      toast.success('Employee updated')
-      navigate(`/employees/${empId}`)
+      toast.success('Team member updated')
+      navigate(`/team-members/${empId}`)
     } catch (err: unknown) {
       const error = err as { message?: string }
       toast.error(error.message ?? 'Failed to update employee')
@@ -135,7 +135,7 @@ export default function EditEmployeePage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/employees/${empId}`)}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(`/team-members/${empId}`)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-semibold">Edit {employee.first_name} {employee.last_name}</h1>
@@ -254,7 +254,7 @@ export default function EditEmployeePage() {
           </Card>
 
           <div className="flex justify-end gap-4">
-            <Button type="button" variant="outline" onClick={() => navigate(`/employees/${empId}`)}>
+            <Button type="button" variant="outline" onClick={() => navigate(`/team-members/${empId}`)}>
               Cancel
             </Button>
             <Button type="submit" disabled={updateEmployee.isPending}>

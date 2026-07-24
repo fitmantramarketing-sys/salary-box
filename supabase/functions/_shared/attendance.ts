@@ -129,20 +129,23 @@ export function computeStatus(
     )
   }
 
-  // Rules:
-  //   Before shift start     → present
-  //   0–5 min after start    → present (no late mark)
-  //   >5 min after start     → late
+  const { grace_period_minutes, half_day_threshold_minutes } = shift
+  const lateCutoff = grace_period_minutes
+  const halfDayCutoff = grace_period_minutes + half_day_threshold_minutes
 
   if (diffMin <= 0) {
     return { status: 'present', total_hours: totalHours, is_late: false }
   }
 
-  if (diffMin <= 5) {
+  if (diffMin <= lateCutoff) {
     return { status: 'present', total_hours: totalHours, is_late: false }
   }
 
-  return { status: 'late', total_hours: totalHours, is_late: true }
+  if (diffMin <= halfDayCutoff) {
+    return { status: 'late', total_hours: totalHours, is_late: true }
+  }
+
+  return { status: 'half_day', total_hours: totalHours, is_late: true }
 }
 
 export function parseTime(time: string): number {

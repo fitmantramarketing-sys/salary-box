@@ -14,7 +14,7 @@ type ReportLink = {
 const REPORTS: ReportLink[] = [
   { label: 'Attendance Report', href: '/reports/attendance', description: 'Monthly attendance summary with CSV export', icon: BarChart3, roles: ['owner', 'hr', 'employee'] },
   { label: 'Leave Report', href: '/reports/leave', description: 'Leave balance report by employee and type', icon: Calendar, roles: ['owner', 'hr'] },
-  { label: 'Headcount', href: '/reports/headcount', description: 'Employee headcount by status, type, and department', icon: Users, roles: ['owner', 'system_admin'] },
+  { label: 'Headcount', href: '/reports/headcount', description: 'Team member headcount by status, type, and department', icon: Users, roles: ['owner', 'system_admin'] },
   { label: 'Regularization Log', href: '/reports/regularization', description: 'Audit trail of all regularization requests', icon: ClipboardList, roles: ['owner'] },
   { label: 'Attendance Heatmap', href: '/reports/heatmap', description: 'Department attendance percentage heatmap', icon: Grid3x3, roles: ['owner'] },
   { label: 'Daily Attendance', href: '/reports/daily', description: 'Day-by-day check-in, check-out, late, WFH, hours', icon: BarChart3, roles: ['owner'] },

@@ -49,7 +49,7 @@ export default function EmployeesPage() {
 
   // Employee role — redirect to own profile
   if (role === 'employee' && employee) {
-    return <Navigate to={`/employees/${employee.id}`} replace />
+    return <Navigate to={`/team-members/${employee.id}`} replace />
   }
 
   const departments = useMemo(() => {
@@ -115,7 +115,7 @@ export default function EmployeesPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `employees_${new Date().toISOString().slice(0, 10)}.csv`
+    a.download = `team-members_${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -123,17 +123,17 @@ export default function EmployeesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Employees</h1>
+        <h1 className="text-2xl font-semibold">Team Members</h1>
         {isOwner && (
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={downloadCSV}>
               <Download className="mr-2 h-4 w-4" />
               CSV
             </Button>
-            <Link to="/employees/new">
+            <Link to="/team-members/new">
               <Button size="sm">
                 <UserPlus className="mr-2 h-4 w-4" />
-                Add Employee
+                Add Team Member
               </Button>
             </Link>
           </div>
@@ -178,7 +178,7 @@ export default function EmployeesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Employees ({filtered.length})</CardTitle>
+          <CardTitle>All Team Members ({filtered.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -187,14 +187,14 @@ export default function EmployeesPage() {
             </div>
           ) : filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">
-              {search ? 'No employees match your search.' : 'No employees yet.'}
+              {search ? 'No team members match your search.' : 'No team members yet.'}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-muted-foreground">
-                    <th className="pb-3 font-medium">Employee</th>
+                    <th className="pb-3 font-medium">Team Member</th>
                     <th className="pb-3 font-medium">Code</th>
                     <th className="pb-3 font-medium">Department</th>
                     <th className="pb-3 font-medium">Designation</th>
@@ -207,7 +207,7 @@ export default function EmployeesPage() {
                   {filtered.map((e) => (
                     <tr key={e.id} className="border-b last:border-0 hover:bg-accent/50">
                       <td className="py-3">
-                        <Link to={`/employees/${e.id}`} className="flex items-center gap-3">
+                        <Link to={`/team-members/${e.id}`} className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={e.photo_url ?? undefined} />
                             <AvatarFallback className="text-xs">
@@ -231,7 +231,7 @@ export default function EmployeesPage() {
                       <td className="py-3 text-muted-foreground">{e.join_date}</td>
                       <td className="py-3">
                         <Link
-                          to={`/employees/${e.id}`}
+                          to={`/team-members/${e.id}`}
                           className="text-primary hover:underline text-xs"
                         >
                           View

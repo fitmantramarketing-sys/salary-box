@@ -104,7 +104,7 @@ export function LeaveBalanceReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="sticky left-0 bg-background z-10">Employee</TableHead>
+                <TableHead className="sticky left-0 bg-background z-10">Team Member</TableHead>
                 <TableHead className="sticky left-[180px] bg-background z-10">Code</TableHead>
                 {leaveTypes.map((lt) => (
                   <TableHead key={lt.id} className="text-center min-w-[80px]">{lt.code}</TableHead>

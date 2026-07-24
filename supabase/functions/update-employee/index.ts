@@ -5,7 +5,7 @@ import { ok, err, cors, handleError } from '../_shared/response.ts'
 const OWNER_FIELDS = [
   'first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'gender',
   'personal_email', 'address_line1', 'address_line2', 'city', 'state', 'pincode',
-  'emergency_contact_name', 'emergency_contact_phone', 'photo_url',
+  'emergency_contact_name', 'emergency_contact_phone', 'guardian_email', 'photo_url',
   'department_id', 'designation_id', 'reporting_manager_id',
   'role', 'employment_type', 'employment_status',
   'join_date', 'exit_date', 'probation_end_date', 'current_salary',
@@ -15,7 +15,7 @@ const OWNER_FIELDS = [
 const HR_FIELDS = [
   'first_name', 'last_name', 'phone', 'date_of_birth', 'gender',
   'personal_email', 'address_line1', 'address_line2', 'city', 'state', 'pincode',
-  'emergency_contact_name', 'emergency_contact_phone', 'photo_url',
+  'emergency_contact_name', 'emergency_contact_phone', 'guardian_email', 'photo_url',
   'department_id', 'designation_id', 'reporting_manager_id',
   'employment_type', 'employment_status',
   'join_date', 'exit_date', 'probation_end_date',
@@ -25,7 +25,7 @@ const HR_FIELDS = [
 const EMPLOYEE_SELF_FIELDS = [
   'phone', 'personal_email',
   'address_line1', 'address_line2', 'city', 'state', 'pincode',
-  'emergency_contact_name', 'emergency_contact_phone', 'photo_url',
+  'emergency_contact_name', 'emergency_contact_phone', 'guardian_email', 'photo_url',
 ] as const
 
 Deno.serve(async (req: Request) => {

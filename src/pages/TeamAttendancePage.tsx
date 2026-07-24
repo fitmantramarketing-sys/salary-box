@@ -111,7 +111,7 @@ export default function TeamAttendancePage() {
 
   function exportCSV() {
     if (!data) return
-    const header = ['Employee', 'Code', 'Department', ...Array.from({ length: daysInMonth }, (_, i) => String(i + 1)), 'Present', 'Absent', 'Incomplete', 'Late', 'WFH']
+    const header = ['Team Member', 'Code', 'Department', ...Array.from({ length: daysInMonth }, (_, i) => String(i + 1)), 'Present', 'Absent', 'Incomplete', 'Late', 'WFH']
     const rows = data.employees.map((emp) => {
       const summary = getSummary(emp.id)
       const days = Array.from({ length: daysInMonth }, (_, i) => {
@@ -160,7 +160,7 @@ export default function TeamAttendancePage() {
           <table className="w-full text-xs sm:text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="sticky left-0 bg-muted/50 z-10 text-left p-2 font-medium min-w-[140px] border-r border-b">Employee</th>
+                <th className="sticky left-0 bg-muted/50 z-10 text-left p-2 font-medium min-w-[140px] border-r border-b">Team Member</th>
                 {Array.from({ length: daysInMonth }, (_, i) => (
                   <th key={i} className="p-1.5 text-center font-medium w-8 sm:w-10 border-r border-b">{i + 1}</th>
                 ))}

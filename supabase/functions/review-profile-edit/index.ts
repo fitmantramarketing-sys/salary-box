@@ -4,7 +4,7 @@ import { ok, err, cors, handleError } from '../_shared/response.ts'
 
 const EDITABLE_FIELDS = [
   'phone', 'personal_email', 'address_line1', 'address_line2', 'city', 'state',
-  'pincode', 'emergency_contact_name', 'emergency_contact_phone', 'photo_url',
+  'pincode', 'emergency_contact_name', 'emergency_contact_phone', 'guardian_email', 'photo_url',
 ]
 
 Deno.serve(async (req: Request) => {

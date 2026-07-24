@@ -58,7 +58,7 @@ function TreeNodeComponent({ node }: { node: TreeNode }) {
   return (
     <div className="ml-6">
       <div className="flex items-center gap-3 rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors">
-        <Link to={`/employees/${node.employee.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+        <Link to={`/team-members/${node.employee.id}`} className="flex items-center gap-3 flex-1 min-w-0">
           <Avatar className="h-9 w-9">
             <AvatarImage src={node.employee.photo_url ?? undefined} />
             <AvatarFallback className="text-xs">
@@ -110,7 +110,7 @@ export default function OrgChartPage() {
         <h1 className="text-2xl font-semibold">Organisation Chart</h1>
         <Card>
           <CardContent className="p-6 text-center text-muted-foreground">
-            No employees found. Assign reporting managers to build the org chart.
+            No team members found. Assign reporting managers to build the org chart.
           </CardContent>
         </Card>
       </div>
@@ -127,7 +127,7 @@ export default function OrgChartPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{employees.length} Active Employees</CardTitle>
+            <CardTitle className="text-base">{employees.length} Active Team Members</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

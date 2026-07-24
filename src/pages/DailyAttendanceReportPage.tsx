@@ -47,7 +47,7 @@ function dateToStr(d: Date): string {
 }
 
 function exportCSV(rows: DailyAttendanceRow[], dateStr: string) {
-  const headers = ['Employee', 'Code', 'Department', 'Check In', 'Check Out', 'Late', 'WFH', 'Hours']
+  const headers = ['Team Member', 'Code', 'Department', 'Check In', 'Check Out', 'Late', 'WFH', 'Hours']
   const data = rows.map((r) => [
     r.employeeName,
     r.employeeCode,
@@ -157,7 +157,7 @@ export default function DailyAttendanceReportPage() {
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
       ) : !rows || rows.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">No active employees found.</CardContent>
+          <CardContent className="py-12 text-center text-muted-foreground">No active team members found.</CardContent>
         </Card>
       ) : (
         <>
@@ -176,7 +176,7 @@ export default function DailyAttendanceReportPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="min-w-[180px]">Employee</TableHead>
+                        <TableHead className="min-w-[180px]">Team Member</TableHead>
                         <TableHead className="min-w-[80px]">Check In</TableHead>
                         <TableHead className="min-w-[80px]">Check Out</TableHead>
                         <TableHead className="min-w-[60px]">Late</TableHead>

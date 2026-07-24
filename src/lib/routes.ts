@@ -1,8 +1,8 @@
 import type { Role } from '@/types'
 
 export const ROUTE_ROLES: Record<string, Role[]> = {
-  '/employees/new': ['owner'],
-  '/employees/bulk-import': ['owner'],
+  '/team-members/new': ['owner'],
+  '/team-members/bulk-import': ['owner'],
   '/attendance/team': ['owner', 'hr'],
   '/leave/team': ['owner', 'hr'],
   '/settings/departments': ['owner'],

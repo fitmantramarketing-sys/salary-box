@@ -82,13 +82,13 @@ export default function RolesPage() {
       <p className="text-sm text-muted-foreground">Change employee roles. Changes take effect on the employee's next request.</p>
 
       <Card>
-        <CardHeader><CardTitle>Employees</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Team Members</CardTitle></CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="text-left p-3 font-medium">Employee</th>
+                  <th className="text-left p-3 font-medium">Team Member</th>
                   <th className="text-left p-3 font-medium">Code</th>
                   <th className="text-left p-3 font-medium">Department</th>
                   <th className="text-left p-3 font-medium">Current Role</th>

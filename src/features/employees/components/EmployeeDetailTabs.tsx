@@ -77,7 +77,7 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
     return (
       <Card>
         <CardContent className="p-6 text-center text-muted-foreground">
-          Employee not found
+          Team member not found
         </CardContent>
       </Card>
     )

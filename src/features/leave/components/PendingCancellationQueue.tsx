@@ -85,7 +85,7 @@ export function PendingCancellationQueue() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Employee</TableHead>
+                <TableHead>Team Member</TableHead>
                 <TableHead>Leave Type</TableHead>
                 <TableHead>Dates</TableHead>
                 <TableHead>Reason for Cancellation</TableHead>

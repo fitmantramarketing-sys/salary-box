@@ -11,6 +11,8 @@ export type ShiftInfo = {
   weekly_off_days: number[]
   late_mark_threshold: number
   grace_period_minutes: number
+  half_day_threshold_minutes: number
+  early_checkout_grace_minutes: number
   break_minutes: number
   is_night_shift: boolean
 }

@@ -139,7 +139,7 @@ export function TeamLeaveCalendar() {
           <div className="min-w-[600px]">
             <div className="grid gap-0" style={{ gridTemplateColumns: `200px repeat(${daysInMonth}, 32px) 80px` }}>
               <div className="sticky left-0 bg-background z-10 px-3 py-2 text-xs font-medium text-muted-foreground border-b">
-                Employee
+                Team Member
               </div>
               {Array.from({ length: daysInMonth }, (_, i) => (
                 <div
