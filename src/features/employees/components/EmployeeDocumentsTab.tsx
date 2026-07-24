@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Download, Upload, Loader2, FileText } from 'lucide-react'
 import { useRole } from '@/hooks/useRole'
+import { useAuthStore } from '@/hooks/useAuth'
 import { useEmployeeDocuments } from '@/features/employees/hooks'
 import { useUploadDocument } from '@/features/employees/mutations'
 import { callEdgeFunction } from '@/lib/edge'
@@ -36,13 +37,14 @@ function formatFileSize(bytes: number) {
 export function EmployeeDocumentsTab({ employeeId }: Props) {
   const { data: documents, isLoading } = useEmployeeDocuments(employeeId)
   const { isOwner, isHR } = useRole()
+  const currentEmployee = useAuthStore((s) => s.employee)
   const uploadMutation = useUploadDocument()
   const [uploadOpen, setUploadOpen] = useState(false)
   const [docType, setDocType] = useState<string>('')
   const [file, setFile] = useState<File | null>(null)
   const [downloading, setDownloading] = useState<string | null>(null)
 
-  const canUpload = isOwner || isHR
+  const canUpload = isOwner || isHR || currentEmployee?.id === employeeId
 
   async function handleDownload(doc: NonNullable<typeof documents>[number]) {
     setDownloading(doc.id)
