@@ -49,6 +49,7 @@ import ReportsRegularizationPage from '@/pages/ReportsRegularizationPage'
 import ReportsHeatmapPage from '@/pages/ReportsHeatmapPage'
 import ReportsHomePage from '@/pages/ReportsHomePage'
 import DailyAttendanceReportPage from '@/pages/DailyAttendanceReportPage'
+import AnnouncementsPage from '@/pages/AnnouncementsPage'
 import RolesPage from '@/pages/RolesPage'
 import AuditLogsPage from '@/pages/AuditLogsPage'
 
@@ -203,6 +204,9 @@ export default function App() {
           <Route element={<RequireFirstPasswordSet />}>
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
+
+              {/* Announcements */}
+              <Route path="/announcements" element={<AnnouncementsPage />} />
 
               {/* Team Members */}
               <Route path="/team-members" element={<EmployeesPage />} />

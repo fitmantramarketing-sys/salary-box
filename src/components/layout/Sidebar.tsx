@@ -13,6 +13,7 @@ import {
   ChevronRight,
   X,
   ClipboardList,
+  Megaphone,
 } from 'lucide-react'
 import { useRole } from '@/hooks/useRole'
 import { cn } from '@/lib/utils'
@@ -33,6 +34,7 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Announcements', href: '/announcements', icon: Megaphone, roles: ['owner', 'hr', 'system_admin'] },
   {
     label: 'Team Members',
     icon: Users,
@@ -104,6 +106,7 @@ function EmployeeNav({ onItemClick }: { onItemClick?: () => void }) {
     <>
       <NavItem icon={LayoutDashboard} href="/dashboard" label="Dashboard" onClick={onItemClick} />
       <NavItem icon={User} href="/team-members/me" label="My Profile" onClick={onItemClick} />
+      <NavItem icon={Megaphone} href="/announcements" label="Announcements" onClick={onItemClick} />
       <NavItem icon={Clock} href="/attendance" label="My Attendance" onClick={onItemClick} />
       <NavItem icon={Clock} href="/attendance/regularization" label="Regularization" onClick={onItemClick} />
       <NavGroupItem
