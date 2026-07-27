@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -12,33 +12,46 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_config: {
         Row: {
           description: string | null
@@ -790,12 +803,12 @@ export type Database = {
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           employee_code: string
-          guardian_email: string | null
           employment_status: Database["public"]["Enums"]["employment_status"]
           employment_type: Database["public"]["Enums"]["employment_type"]
           exit_date: string | null
           first_name: string
           gender: Database["public"]["Enums"]["gender"] | null
+          guardian_email: string | null
           id: string
           is_active: boolean
           is_first_login: boolean
@@ -827,12 +840,12 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           employee_code: string
-          guardian_email?: string | null
           employment_status?: Database["public"]["Enums"]["employment_status"]
           employment_type?: Database["public"]["Enums"]["employment_type"]
           exit_date?: string | null
           first_name: string
           gender?: Database["public"]["Enums"]["gender"] | null
+          guardian_email?: string | null
           id?: string
           is_active?: boolean
           is_first_login?: boolean
@@ -864,12 +877,12 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           employee_code?: string
-          guardian_email?: string | null
           employment_status?: Database["public"]["Enums"]["employment_status"]
           employment_type?: Database["public"]["Enums"]["employment_type"]
           exit_date?: string | null
           first_name?: string
           gender?: Database["public"]["Enums"]["gender"] | null
+          guardian_email?: string | null
           id?: string
           is_active?: boolean
           is_first_login?: boolean
@@ -1497,10 +1510,10 @@ export type Database = {
         Row: {
           break_minutes: number
           created_at: string
+          early_checkout_grace_minutes: number
           end_time: string
           grace_period_minutes: number
           half_day_threshold_minutes: number
-          early_checkout_grace_minutes: number
           id: string
           is_active: boolean
           is_default: boolean
@@ -1516,10 +1529,10 @@ export type Database = {
         Insert: {
           break_minutes?: number
           created_at?: string
+          early_checkout_grace_minutes?: number
           end_time: string
           grace_period_minutes?: number
           half_day_threshold_minutes?: number
-          early_checkout_grace_minutes?: number
           id?: string
           is_active?: boolean
           is_default?: boolean
@@ -1535,10 +1548,10 @@ export type Database = {
         Update: {
           break_minutes?: number
           created_at?: string
+          early_checkout_grace_minutes?: number
           end_time?: string
           grace_period_minutes?: number
           half_day_threshold_minutes?: number
-          early_checkout_grace_minutes?: number
           id?: string
           is_active?: boolean
           is_default?: boolean
@@ -1734,9 +1747,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       attendance_status: [
