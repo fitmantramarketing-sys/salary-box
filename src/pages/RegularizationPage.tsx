@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -589,6 +590,8 @@ function PendingReviewsTab() {
 export default function RegularizationPage() {
   const { isOwner, isHR } = useRole()
   const isAdmin = isOwner || isHR
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get('tab') || (isAdmin ? 'early-checkouts' : 'my')
 
   return (
     <div className="space-y-6">
@@ -598,7 +601,7 @@ export default function RegularizationPage() {
       </div>
 
       {isAdmin ? (
-        <Tabs defaultValue={isAdmin ? 'early-checkouts' : 'my'} className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="space-y-4">
           <TabsList>
             {(isOwner || isHR) && <TabsTrigger value="early-checkouts">Early Checkouts</TabsTrigger>}
             {(isOwner || isHR) && <TabsTrigger value="pending">Pending Reviews</TabsTrigger>}

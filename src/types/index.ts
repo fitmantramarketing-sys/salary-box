@@ -74,6 +74,14 @@ export type AddLifecycleEventResponse = {
   event_id: string
 }
 
+export type DeactivateEmployeeResponse = {
+  deactivated: boolean
+}
+
+export type ReactivateEmployeeResponse = {
+  reactivated: boolean
+}
+
 export type PresignedUrlResponse = {
   url: string
   expires_at: string

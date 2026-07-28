@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: employees } = await supabase
       .from('employees')
-      .select('id, personal_email')
+      .select('id, email, personal_email')
       .neq('role', 'system_admin')
       .eq('is_active', true)
 
@@ -52,10 +52,11 @@ Deno.serve(async (req: Request) => {
           referenceTable: 'announcements',
         })
 
-        if (emp.personal_email) {
+        const emailAddr = emp.personal_email || emp.email
+        if (emailAddr) {
           try {
             await sendEmail({
-              to: emp.personal_email,
+              to: emailAddr,
               subject: `Announcement: ${title.trim()}`,
               html: `
                 <h2>${title.trim()}</h2>

@@ -2,9 +2,15 @@ import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/hooks/useAuth'
 import { useRole } from '@/hooks/useRole'
 import { useEmployee } from '@/features/employees/hooks'
+import { useDeactivateEmployee, useReactivateEmployee } from '@/features/employees/mutations'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { AlertTriangle, UserX, UserCheck } from 'lucide-react'
+import { useState } from 'react'
 import { EmployeeOverviewTab } from './EmployeeOverviewTab'
 import { EmployeeDocumentsTab } from './EmployeeDocumentsTab'
 import { EmployeeBankDetailsTab } from './EmployeeBankDetailsTab'
@@ -48,6 +54,11 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
   const { data: employee, isLoading, error } = useEmployee(employeeId)
   const { isOwner, isHR, isSystemAdmin } = useRole()
   const currentEmployee = useAuthStore((s) => s.employee)
+  const deactivateMutation = useDeactivateEmployee()
+  const reactivateMutation = useReactivateEmployee()
+  const [deactivateOpen, setDeactivateOpen] = useState(false)
+  const [reactivateOpen, setReactivateOpen] = useState(false)
+  const [actionReason, setActionReason] = useState('')
 
   const activeTab = searchParams.get('tab') || 'overview'
   const onTabChange = (value: string) => setSearchParams({ tab: value })
@@ -56,6 +67,18 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
   const canViewAll = isOwner || isHR || isSystemAdmin
   const adminTabs = getAdminTabs(employee?.role)
   const tabs = isOwnProfile && !canViewAll ? SELF_TABS : adminTabs
+
+  const handleDeactivate = () => {
+    deactivateMutation.mutate({ employee_id: employeeId, reason: actionReason || undefined }, {
+      onSettled: () => { setDeactivateOpen(false); setActionReason('') },
+    })
+  }
+
+  const handleReactivate = () => {
+    reactivateMutation.mutate({ employee_id: employeeId, reason: actionReason || undefined }, {
+      onSettled: () => { setReactivateOpen(false); setActionReason('') },
+    })
+  }
 
   if (isLoading) {
     return (
@@ -86,8 +109,86 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
     )
   }
 
+  const isDeactivated = !employee.is_active
+
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-6">
+    <>
+      {isDeactivated && isOwner && (
+        <div className="flex items-center justify-between rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-5 w-5" />
+            <span className="font-medium">This employee is deactivated</span>
+          </div>
+          <AlertDialog open={reactivateOpen} onOpenChange={setReactivateOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <UserCheck className="mr-2 h-4 w-4" />
+                Reactivate
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reactivate Employee</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will restore {employee.first_name} {employee.last_name}'s account, set their status to active, and clear their exit date.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <Input
+                placeholder="Reason (optional)"
+                value={actionReason}
+                onChange={(e) => setActionReason(e.target.value)}
+              />
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setActionReason('')}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleReactivate} disabled={reactivateMutation.isPending}>
+                  {reactivateMutation.isPending ? 'Reactivating...' : 'Confirm Reactivation'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+
+      {!isDeactivated && isOwner && !isOwnProfile && (
+        <div className="flex justify-end">
+          <AlertDialog open={deactivateOpen} onOpenChange={setDeactivateOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                <UserX className="mr-2 h-4 w-4" />
+                Deactivate
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Deactivate Employee</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will revoke {employee.first_name} {employee.last_name}'s access, set them as inactive, and set today as their exit date. Their auth session will be terminated. This can be reversed later.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <Input
+                placeholder="Reason (optional)"
+                value={actionReason}
+                onChange={(e) => setActionReason(e.target.value)}
+              />
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setActionReason('')}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeactivate} disabled={deactivateMutation.isPending}>
+                  {deactivateMutation.isPending ? 'Deactivating...' : 'Confirm Deactivation'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+
+      {isDeactivated && !isOwner && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+          <AlertTriangle className="h-5 w-5 text-destructive" />
+          <span className="text-destructive font-medium">This employee is deactivated</span>
+        </div>
+      )}
+
+      <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-6">
       <TabsList className="flex-wrap">
         {tabs.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value}>
@@ -142,5 +243,6 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
         <EmployeeAnnouncementsTab />
       </TabsContent>
     </Tabs>
+    </>
   )
 }

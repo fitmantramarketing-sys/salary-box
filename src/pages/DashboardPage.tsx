@@ -23,15 +23,17 @@ import { toast } from 'sonner'
 import { LocationMapCard } from '@/features/attendance/components/LocationMapCard'
 
 async function fetchDashboardCounts() {
-  const [empRes, leaveRes, regRes] = await Promise.all([
+  const [empRes, leaveRes, regRes, earlyRes] = await Promise.all([
     supabase.from('employees').select('*', { head: true, count: 'exact' }).eq('is_active', true),
     supabase.from('leave_applications').select('*', { head: true, count: 'exact' }).eq('status', 'pending'),
     supabase.from('attendance_regularization_requests').select('*', { head: true, count: 'exact' }).eq('status', 'pending'),
+    supabase.from('attendance_records').select('*', { head: true, count: 'exact' }).eq('early_checkout_status', 'pending'),
   ])
   return {
     totalEmployees: empRes.count ?? 0,
     pendingLeaves: leaveRes.count ?? 0,
     pendingRegularizations: regRes.count ?? 0,
+    pendingEarlyCheckouts: earlyRes.count ?? 0,
   }
 }
 
@@ -78,7 +80,7 @@ function OwnerDashboard() {
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Team Members</CardTitle>
@@ -107,14 +109,27 @@ function OwnerDashboard() {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">Regularizations</CardTitle>
+          <CardTitle className="text-sm font-medium">Regularization Requests</CardTitle>
           <Clock className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-amber-600">{counts?.pendingRegularizations ?? 0}</div>
           <p className="text-xs text-muted-foreground">Pending requests</p>
-          <Link to="/attendance/regularization" className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1">
+          <Link to="/attendance/regularization?tab=pending" className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1">
             Review requests <ArrowRight className="h-3 w-3" />
+          </Link>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-medium">Early Checkouts</CardTitle>
+          <Clock className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-amber-600">{counts?.pendingEarlyCheckouts ?? 0}</div>
+          <p className="text-xs text-muted-foreground">Pending approvals</p>
+          <Link to="/attendance/regularization?tab=early-checkouts" className="text-xs text-primary hover:underline mt-2 inline-flex items-center gap-1">
+            Review early checkouts <ArrowRight className="h-3 w-3" />
           </Link>
         </CardContent>
       </Card>
@@ -291,7 +306,7 @@ function HRDashboard() {
 
       <LocationMapCard />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Pending Leaves</CardTitle>
@@ -307,14 +322,27 @@ function HRDashboard() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Regularizations</CardTitle>
+            <CardTitle className="text-sm font-medium">Regularization Requests</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">{counts?.pendingRegularizations ?? 0}</div>
             <p className="text-xs text-muted-foreground">Pending requests</p>
-            <Link to="/attendance/regularization" className="text-xs text-primary hover:underline mt-2 inline-block">
+            <Link to="/attendance/regularization?tab=pending" className="text-xs text-primary hover:underline mt-2 inline-block">
               Review requests
+            </Link>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Early Checkouts</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-600">{counts?.pendingEarlyCheckouts ?? 0}</div>
+            <p className="text-xs text-muted-foreground">Pending approvals</p>
+            <Link to="/attendance/regularization?tab=early-checkouts" className="text-xs text-primary hover:underline mt-2 inline-block">
+              Review early checkouts
             </Link>
           </CardContent>
         </Card>

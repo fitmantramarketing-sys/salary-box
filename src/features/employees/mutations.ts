@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { callEdgeFunction, callEdgeFunctionFormData } from '@/lib/edge'
-import type { CreateEmployeeResponse, UploadDocumentResponse, AddLifecycleEventResponse } from '@/types'
+import type { CreateEmployeeResponse, UploadDocumentResponse, AddLifecycleEventResponse, DeactivateEmployeeResponse, ReactivateEmployeeResponse } from '@/types'
 import type { CreateEmployeeForm } from './schemas'
 import type { LifecycleEventForm } from './types'
 import type { Employee } from '@/types'
@@ -106,4 +106,28 @@ export type BulkImportResult = {
   success_count: number
   failure_count: number
   failures: { row: number; error: string }[]
+}
+
+export function useDeactivateEmployee() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { employee_id: string; reason?: string }) =>
+      callEdgeFunction<{ employee_id: string; reason?: string }, DeactivateEmployeeResponse>('deactivate-employee', body),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['employees', 'detail', variables.employee_id] })
+      qc.invalidateQueries({ queryKey: ['employees', 'list'] })
+    },
+  })
+}
+
+export function useReactivateEmployee() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { employee_id: string; reason?: string }) =>
+      callEdgeFunction<{ employee_id: string; reason?: string }, ReactivateEmployeeResponse>('reactivate-employee', body),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['employees', 'detail', variables.employee_id] })
+      qc.invalidateQueries({ queryKey: ['employees', 'list'] })
+    },
+  })
 }

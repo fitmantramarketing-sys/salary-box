@@ -59,7 +59,8 @@ export default function EmployeesPage() {
 
   const filtered = employees.filter((e) => {
     if (deptFilter !== 'all' && e.department?.name !== deptFilter) return false
-    if (statusFilter !== 'all' && e.employment_status !== statusFilter) return false
+    if (statusFilter === 'deactivated' && e.is_active) return false
+    if (statusFilter !== 'all' && statusFilter !== 'deactivated' && e.employment_status !== statusFilter) return false
     if (!search) return true
     const q = search.toLowerCase()
     return (
@@ -172,6 +173,7 @@ export default function EmployeesPage() {
             <SelectItem value="resigned">Resigned</SelectItem>
             <SelectItem value="terminated">Terminated</SelectItem>
             <SelectItem value="future_joiner">Future Joiner</SelectItem>
+            <SelectItem value="deactivated">Deactivated</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -224,9 +226,13 @@ export default function EmployeesPage() {
                       <td className="py-3">{e.department?.name ?? '—'}</td>
                       <td className="py-3">{e.designation?.name ?? '—'}</td>
                       <td className="py-3">
-                        <Badge variant={getStatusVariant(e.employment_status)}>
-                          {getStatusLabel(e.employment_status)}
-                        </Badge>
+                        {!e.is_active ? (
+                          <Badge variant="destructive">Deactivated</Badge>
+                        ) : (
+                          <Badge variant={getStatusVariant(e.employment_status)}>
+                            {getStatusLabel(e.employment_status)}
+                          </Badge>
+                        )}
                       </td>
                       <td className="py-3 text-muted-foreground">{e.join_date}</td>
                       <td className="py-3">
