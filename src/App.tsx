@@ -147,6 +147,20 @@ export default function App() {
         if (event === 'SIGNED_IN' && session?.user) {
           // Ignore SIGNED_IN during mount init (from our own setSession call)
           if (!mountInitComplete) return
+
+          const existingUser = useAuthStore.getState().user
+          // Mobile browsers background the tab while a native picker (file
+          // upload, camera, etc.) is open. On resume, supabase-js performs a
+          // session recovery that re-emits SIGNED_IN. If we already have this
+          // user loaded, it's a recovery — just rehydrate, do NOT navigate.
+          if (existingUser?.id === session.user.id) {
+            const recovered = await hydrateEmployee(session.user)
+            if (recovered?.is_first_login) {
+              navigate('/set-password', { replace: true })
+            }
+            return
+          }
+
           const employee = await hydrateEmployee(session.user)
           if (employee?.is_first_login) {
             navigate('/set-password', { replace: true })
