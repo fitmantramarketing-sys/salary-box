@@ -41,10 +41,7 @@ import { useLeaveTypes } from '@/features/leave/hooks'
 const DOC_TYPES = [
   { value: 'aadhar', label: 'Aadhar' },
   { value: 'pan', label: 'PAN' },
-  { value: 'offer_letter', label: 'Offer Letter' },
-  { value: 'appointment_letter', label: 'Appointment Letter' },
-  { value: 'experience_letter', label: 'Experience Letter' },
-  { value: 'other', label: 'Other' },
+  { value: 'passport_photo', label: 'Passport Size Photo' },
 ] as const
 
 export default function NewEmployeePage() {

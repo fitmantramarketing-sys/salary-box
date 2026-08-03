@@ -59,7 +59,7 @@ export const lifecycleEventSchema = z.object({
 
 export const uploadDocumentSchema = z.object({
   employee_id: z.string().uuid(),
-  document_type: z.enum(['aadhar', 'pan', 'offer_letter', 'appointment_letter', 'experience_letter', 'other']),
+  document_type: z.enum(['aadhar', 'pan', 'passport_photo']),
   file: z.instanceof(File).refine((f) => f.size <= 5 * 1024 * 1024, 'File must be under 5MB'),
   force: z.boolean().optional(),
   override_reason: z.string().optional(),

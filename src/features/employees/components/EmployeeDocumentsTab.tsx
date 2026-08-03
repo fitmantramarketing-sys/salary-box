@@ -82,10 +82,7 @@ export function EmployeeDocumentsTab({ employeeId }: Props) {
   const docTypeLabels: Record<string, string> = {
     aadhar: 'Aadhar',
     pan: 'PAN',
-    offer_letter: 'Offer Letter',
-    appointment_letter: 'Appointment Letter',
-    experience_letter: 'Experience Letter',
-    other: 'Other',
+    passport_photo: 'Passport Size Photo',
   }
 
   return (

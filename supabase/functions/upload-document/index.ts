@@ -20,7 +20,7 @@ Deno.serve(async (req: Request) => {
       return err('VALIDATION_ERROR', 'employee_id, document_type, and file are required', 400)
     }
 
-    const allowedTypes = ['aadhar', 'pan', 'offer_letter', 'appointment_letter', 'experience_letter', 'other']
+    const allowedTypes = ['aadhar', 'pan', 'passport_photo']
     if (!allowedTypes.includes(documentType)) {
       return err('VALIDATION_ERROR', `document_type must be one of: ${allowedTypes.join(', ')}`, 400)
     }
