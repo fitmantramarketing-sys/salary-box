@@ -190,7 +190,7 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
       )}
 
       <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-6">
-      <TabsList className="flex-wrap">
+      <TabsList className="w-full h-auto justify-start overflow-x-auto whitespace-nowrap [&>button]:shrink-0 [&>button]:whitespace-nowrap">
         {tabs.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value}>
             {tab.label}
