@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { toast } from 'sonner'
-import { Download, Upload, Loader2, FileText, Eye, Trash2 } from 'lucide-react'
+import { Download, Upload, Loader2, FileText, Eye, Trash2, Paperclip } from 'lucide-react'
 import { useRole } from '@/hooks/useRole'
 import { useAuthStore } from '@/hooks/useAuth'
 import { useEmployeeDocuments } from '@/features/employees/hooks'
@@ -8,7 +8,6 @@ import { useUploadDocument, useDeleteDocument } from '@/features/employees/mutat
 import { callEdgeFunction } from '@/lib/edge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Dialog,
@@ -57,6 +56,7 @@ export function EmployeeDocumentsTab({ employeeId }: Props) {
   const currentEmployee = useAuthStore((s) => s.employee)
   const uploadMutation = useUploadDocument()
   const deleteMutation = useDeleteDocument()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [docType, setDocType] = useState<string>('')
   const [file, setFile] = useState<File | null>(null)
@@ -134,6 +134,7 @@ export function EmployeeDocumentsTab({ employeeId }: Props) {
       setUploadOpen(false)
       setFile(null)
       setDocType('')
+      if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err: unknown) {
       const error = err as { message?: string }
       toast.error(error.message ?? 'Failed to upload')
@@ -142,6 +143,13 @@ export function EmployeeDocumentsTab({ employeeId }: Props) {
 
   return (
     <Card>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png"
+        className="hidden"
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+      />
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Documents</CardTitle>
         {canUpload && pendingTypes.length > 0 && (
@@ -167,7 +175,32 @@ export function EmployeeDocumentsTab({ employeeId }: Props) {
                 </div>
                 <div>
                   <Label>File (PDF, JPEG, PNG max 5MB)</Label>
-                  <Input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} accept=".pdf,.jpg,.jpeg,.png" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {file ? (
+                      <>
+                        <FileText className="mr-2 h-4 w-4" />
+                        <span className="truncate">{file.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Paperclip className="mr-2 h-4 w-4" />
+                        Choose file
+                      </>
+                    )}
+                  </Button>
+                  {file && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatFileSize(file.size)}
+                      <Button type="button" variant="link" size="sm" className="h-auto p-0 px-1 text-xs" onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = '' }}>
+                        Remove
+                      </Button>
+                    </p>
+                  )}
                 </div>
                 <Button className="w-full" onClick={handleUpload} disabled={!file || !docType || uploadMutation.isPending}>
                   {uploadMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading…</> : 'Upload'}
