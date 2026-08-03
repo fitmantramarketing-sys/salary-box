@@ -104,6 +104,8 @@ export function EmployeeOverviewTab({ employee }: Props) {
                 <p>{employee.address_line1}{employee.city ? `, ${employee.city}` : ''}</p>
               </div>
             )}
+            {employee.emergency_contact_name && <div className="flex justify-between"><span className="text-muted-foreground">Emergency Contact</span><span>{employee.emergency_contact_name}</span></div>}
+            {employee.emergency_contact_phone && <div className="flex justify-between"><span className="text-muted-foreground">Emergency Phone</span><span>{employee.emergency_contact_phone}</span></div>}
           </CardContent>
         </Card>
 

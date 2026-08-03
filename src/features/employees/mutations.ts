@@ -60,6 +60,23 @@ export function useUploadDocument() {
   })
 }
 
+export function useDeleteDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ document_id, employee_id }: { document_id: string; employee_id: string }) => {
+      const { error } = await supabase
+        .from('employee_documents')
+        .update({ is_active: false })
+        .eq('id', document_id)
+      if (error) throw error
+      return employee_id
+    },
+    onSuccess: (employeeId) => {
+      qc.invalidateQueries({ queryKey: ['employees', 'documents', employeeId] })
+    },
+  })
+}
+
 export function useAddLifecycleEvent() {
   const qc = useQueryClient()
   return useMutation({

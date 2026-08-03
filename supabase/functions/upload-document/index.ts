@@ -29,6 +29,18 @@ Deno.serve(async (req: Request) => {
       return err('FORBIDDEN', 'Employees can only upload documents for themselves', 403)
     }
 
+    const { data: existingDoc } = await supabase
+      .from('employee_documents')
+      .select('id')
+      .eq('employee_id', employeeId)
+      .eq('document_type', documentType)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    if (existingDoc) {
+      return err('CONFLICT', `A ${documentType} document is already uploaded for this employee. Delete it before re-uploading.`, 409)
+    }
+
     const validMimes = ['application/pdf', 'image/jpeg', 'image/png']
     if (!validMimes.includes(file.type)) {
       return err('VALIDATION_ERROR', 'Only PDF, JPEG, and PNG files are allowed', 400)

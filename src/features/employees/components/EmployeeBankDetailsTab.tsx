@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useRole } from '@/hooks/useRole'
+import { useAuthStore } from '@/hooks/useAuth'
 import { useEmployeeBankDetails } from '@/features/employees/hooks'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,9 @@ type Props = { employeeId: string }
 export function EmployeeBankDetailsTab({ employeeId }: Props) {
   const qc = useQueryClient()
   const { isOwner } = useRole()
+  const currentEmployee = useAuthStore((s) => s.employee)
+  const isOwnProfile = currentEmployee?.id === employeeId
+  const canEdit = isOwner || isOwnProfile
   const { data: bankDetails, isLoading } = useEmployeeBankDetails(employeeId)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [accountHolder, setAccountHolder] = useState('')
@@ -43,17 +47,23 @@ export function EmployeeBankDetailsTab({ employeeId }: Props) {
 
   async function handleSave() {
     if (!accountHolder.trim()) return toast.error('Account holder name is required')
-    if (!accountNumber.trim()) return toast.error('Account number is required')
-    if (accountNumber !== confirmAccountNumber) return toast.error('Account numbers do not match')
+    if (accountNumber.trim() && accountNumber !== confirmAccountNumber) return toast.error('Account numbers do not match')
+    if (!accountNumber.trim()) {
+      if (!bankDetails) return toast.error('Account number is required')
+      if (!confirmAccountNumber.trim()) return toast.error('Please re-enter the account number to confirm')
+    } else if (accountNumber !== confirmAccountNumber) {
+      return toast.error('Account numbers do not match')
+    }
     if (!ifscCode.trim()) return toast.error('IFSC code is required')
     if (!bankName.trim()) return toast.error('Bank name is required')
 
     setSaving(true)
     try {
+      const finalNumber = accountNumber.trim() || bankDetails!.account_number_encrypted
       const { error } = await supabase.from('employee_bank_details').upsert({
         employee_id: employeeId,
-        account_number_encrypted: accountNumber.trim(),
-        account_number_last4: accountNumber.trim().slice(-4),
+        account_number_encrypted: finalNumber,
+        account_number_last4: accountNumber.trim() ? accountNumber.trim().slice(-4) : bankDetails!.account_number_last4,
         ifsc_code: ifscCode.trim().toUpperCase(),
         bank_name: bankName.trim(),
         account_holder_name: accountHolder.trim(),
@@ -89,7 +99,7 @@ export function EmployeeBankDetailsTab({ employeeId }: Props) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Bank Details</CardTitle>
-        {isOwner && (
+        {canEdit && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm" variant="ghost" onClick={openEdit}>

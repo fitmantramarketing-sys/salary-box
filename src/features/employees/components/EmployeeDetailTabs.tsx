@@ -46,6 +46,7 @@ const SELF_TABS = [
   { value: 'overview', label: 'My Profile' },
   { value: 'documents', label: 'My Documents' },
   { value: 'announcements', label: 'Announcements' },
+  { value: 'bank_details', label: 'Bank Details' },
   { value: 'onboarding', label: 'Onboarding' },
 ] as const
 
@@ -205,7 +206,7 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
         <EmployeeDocumentsTab employeeId={employeeId} />
       </TabsContent>
 
-      {canViewAll && (
+      {(isOwnProfile || canViewAll) && (
         <TabsContent value="bank_details">
           <EmployeeBankDetailsTab employeeId={employeeId} />
         </TabsContent>
