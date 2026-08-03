@@ -190,9 +190,13 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
       )}
 
       <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-6">
-      <TabsList className="w-full h-auto justify-start overflow-x-auto whitespace-nowrap [&>button]:shrink-0 [&>button]:whitespace-nowrap">
+      <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0 [&>button]:shrink-0">
         {tabs.map((tab) => (
-          <TabsTrigger key={tab.value} value={tab.value}>
+          <TabsTrigger
+            key={tab.value}
+            value={tab.value}
+            className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium transition-colors data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+          >
             {tab.label}
           </TabsTrigger>
         ))}
