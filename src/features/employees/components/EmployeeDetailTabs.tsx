@@ -17,9 +17,7 @@ import { EmployeeBankDetailsTab } from './EmployeeBankDetailsTab'
 import { EmployeeLifecycleTab } from './EmployeeLifecycleTab'
 import { EmployeeAttendanceTab } from './EmployeeAttendanceTab'
 import { EmployeeLeaveTab } from './EmployeeLeaveTab'
-import { EmployeeOnboardingTab } from './EmployeeOnboardingTab'
 import { EmployeeActivityTab } from './EmployeeActivityTab'
-import { EmployeeAnnouncementsTab } from '@/features/announcements/components/EmployeeAnnouncementsTab'
 
 type Props = { employeeId: string }
 
@@ -27,7 +25,6 @@ function getAdminTabs(employeeRole?: string) {
   const tabs: { value: string; label: string }[] = [
     { value: 'overview', label: 'Overview' },
     { value: 'documents', label: 'Documents' },
-    { value: 'announcements', label: 'Announcements' },
     { value: 'bank_details', label: 'Bank Details' },
     { value: 'lifecycle', label: 'Lifecycle' },
     { value: 'activity', label: 'Activity' },
@@ -35,19 +32,14 @@ function getAdminTabs(employeeRole?: string) {
   if (employeeRole !== 'owner') {
     tabs.push({ value: 'attendance', label: 'Attendance' })
   }
-  tabs.push(
-    { value: 'leave', label: 'Leave' },
-    { value: 'onboarding', label: 'Onboarding' },
-  )
+  tabs.push({ value: 'leave', label: 'Leave' })
   return tabs
 }
 
 const SELF_TABS = [
   { value: 'overview', label: 'My Profile' },
   { value: 'documents', label: 'My Documents' },
-  { value: 'announcements', label: 'Announcements' },
   { value: 'bank_details', label: 'Bank Details' },
-  { value: 'onboarding', label: 'Onboarding' },
 ] as const
 
 export function EmployeeDetailTabs({ employeeId }: Props) {
@@ -239,14 +231,6 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
           <EmployeeLeaveTab employeeId={employeeId} />
         </TabsContent>
       )}
-
-      <TabsContent value="onboarding">
-        <EmployeeOnboardingTab employeeId={employeeId} />
-      </TabsContent>
-
-      <TabsContent value="announcements">
-        <EmployeeAnnouncementsTab />
-      </TabsContent>
     </Tabs>
     </>
   )
