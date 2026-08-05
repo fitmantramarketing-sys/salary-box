@@ -268,8 +268,8 @@ export default function EmployeeAttendanceDrillDownPage() {
                         {r.status.replace(/_/g, ' ')}
                       </span>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{r.checkIn ? new Date(r.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</TableCell>
-                    <TableCell className="font-mono text-xs">{r.checkOut ? new Date(r.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.isWfh ? (r.wfhStart ? new Date(r.wfhStart).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—') : (r.checkIn ? new Date(r.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—')}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.isWfh ? (r.wfhEnd ? new Date(r.wfhEnd).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—') : (r.checkOut ? new Date(r.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—')}</TableCell>
                     <TableCell>{r.totalHours?.toFixed(1) ?? '—'}</TableCell>
                     <TableCell>{r.isLate ? 'Yes' : 'No'}</TableCell>
                     <TableCell>{r.isWfh ? 'Yes' : 'No'}</TableCell>

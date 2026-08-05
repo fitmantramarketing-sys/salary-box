@@ -21,6 +21,10 @@ const STATUS_CLASS: Record<string, string> = {
   incomplete: 'text-yellow-600 bg-yellow-50',
 }
 
+function formatTime(iso: string | null | undefined) {
+  return iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'
+}
+
 export default function ReportsAttendancePage() {
   const { isEmployee } = useRole()
   const employeeId = useAuthStore((s) => s.employee?.id)
@@ -80,7 +84,8 @@ export default function ReportsAttendancePage() {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     const rows = selfReport.map((r) => [
       r.date, days[r.dayOfWeek], r.status,
-      r.checkIn ?? '—', r.checkOut ?? '—',
+      formatTime(r.isWfh ? (r.wfhStart ?? r.checkIn) : r.checkIn),
+      formatTime(r.isWfh ? (r.wfhEnd ?? r.checkOut) : r.checkOut),
       r.totalHours?.toFixed(2) ?? '—',
       r.isLate ? 'Yes' : 'No', r.isWfh ? 'Yes' : 'No',
     ])
@@ -167,8 +172,8 @@ export default function ReportsAttendancePage() {
                               {r.status.replace(/_/g, ' ')}
                             </span>
                           </TableCell>
-                          <TableCell className="font-mono text-xs">{r.checkIn ? new Date(r.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</TableCell>
-                          <TableCell className="font-mono text-xs">{r.checkOut ? new Date(r.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</TableCell>
+                          <TableCell className="font-mono text-xs">{formatTime(r.isWfh ? (r.wfhStart ?? r.checkIn) : r.checkIn)}</TableCell>
+                          <TableCell className="font-mono text-xs">{formatTime(r.isWfh ? (r.wfhEnd ?? r.checkOut) : r.checkOut)}</TableCell>
                           <TableCell>{r.totalHours?.toFixed(1) ?? '—'}</TableCell>
                           <TableCell>{r.isLate ? 'Yes' : 'No'}</TableCell>
                           <TableCell>{r.isWfh ? 'Yes' : 'No'}</TableCell>

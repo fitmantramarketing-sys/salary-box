@@ -52,6 +52,8 @@ export type SelfAttendanceRow = {
   status: string
   checkIn: string | null
   checkOut: string | null
+  wfhStart: string | null
+  wfhEnd: string | null
   totalHours: number | null
   isLate: boolean
   isWfh: boolean
@@ -506,6 +508,8 @@ export async function fetchSelfAttendance(
       status: record?.status ?? (isHoliday ? 'holiday' : (isWeeklyOff ? 'weekly_off' : 'absent')),
       checkIn: record?.check_in_time ?? null,
       checkOut: record?.check_out_time ?? null,
+      wfhStart: record?.wfh_start_time ?? null,
+      wfhEnd: record?.wfh_end_time ?? null,
       totalHours: record?.total_hours ?? null,
       isLate: record?.is_late ?? false,
       isWfh: record?.is_wfh ?? false,
