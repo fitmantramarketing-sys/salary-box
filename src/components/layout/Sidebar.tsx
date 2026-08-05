@@ -60,7 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
     icon: Calendar,
     children: [
       { label: 'Leave Dashboard', href: '/leave', roles: ['owner', 'hr', 'employee'] },
-      { label: 'Apply Leave', href: '/leave/apply', roles: ['owner', 'hr', 'employee'] },
+      { label: 'Apply Leave', href: '/leave/apply', roles: ['hr', 'employee'] },
       { label: 'Team Leave', href: '/leave/team', roles: ['owner', 'hr'] },
       { label: 'Holiday Calendar', href: '/leave/holidays', roles: ['owner', 'hr', 'employee'] },
     ],
