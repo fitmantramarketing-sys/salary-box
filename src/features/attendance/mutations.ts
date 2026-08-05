@@ -25,7 +25,16 @@ export function useLogWFH() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: () =>
-      callEdgeFunction<object, { attendance_record_id: string; is_wfh: boolean }>('log-wfh', {}),
+      callEdgeFunction<object, { attendance_record_id: string; is_wfh: boolean; wfh_start_time: string }>('log-wfh', {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['attendance'] }),
+  })
+}
+
+export function useEndWFH() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      callEdgeFunction<object, { attendance_record_id: string; wfh_start_time: string; wfh_end_time: string; total_hours: number | null }>('end-wfh', {}),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['attendance'] }),
   })
 }

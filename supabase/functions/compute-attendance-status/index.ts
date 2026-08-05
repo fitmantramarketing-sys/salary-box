@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
       }
 
       if (existing) {
-        if (existing.check_out_time) {
+        if (existing.check_out_time || (existing.is_wfh && existing.wfh_end_time)) {
           const rec: AttendanceRecordForCompute = {
             id: existing.id,
             employee_id: existing.employee_id,
@@ -72,6 +72,8 @@ Deno.serve(async (req: Request) => {
             total_hours: existing.total_hours,
             is_late: existing.is_late,
             is_manually_entered: existing.is_manually_entered,
+            wfh_start_time: existing.wfh_start_time,
+            wfh_end_time: existing.wfh_end_time,
           }
 
           const result = computeStatus(rec, shift, holidayFlag, woffFlag)

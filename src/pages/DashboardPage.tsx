@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Loader2, Users, Clock, Calendar, CheckCircle2, ArrowRight, Home, BarChart3 } from 'lucide-react'
-import { useCheckIn, useCheckOut, useLogWFH } from '@/features/attendance/mutations'
-import { getCurrentPosition, getCurrentPositionQuick } from '@/features/attendance/utils'
+import { useCheckIn, useCheckOut, useLogWFH, useEndWFH } from '@/features/attendance/mutations'
+import { getCurrentPosition, getCurrentPositionQuick, formatHours } from '@/features/attendance/utils'
 import {
   Dialog,
   DialogContent,
@@ -172,6 +172,7 @@ function HRDashboard() {
   const checkIn = useCheckIn()
   const checkOut = useCheckOut()
   const logWFH = useLogWFH()
+  const endWFH = useEndWFH()
 
   const [earlyCheckoutOpen, setEarlyCheckoutOpen] = useState(false)
   const [earlyCheckoutReason, setEarlyCheckoutReason] = useState('')
@@ -262,9 +263,22 @@ function HRDashboard() {
     }
   }
 
+  const handleEndWFH = async () => {
+    try {
+      const result = await endWFH.mutateAsync()
+      toast.success(`WFH ended. Total: ${formatHours(result.total_hours)}`)
+      refetch()
+    } catch (e: unknown) {
+      const err = e as { message?: string }
+      toast.error(err?.message ?? 'Failed to end WFH')
+    }
+  }
+
   const checkedIn = !!dashboard?.todayAttendance?.check_in_time
   const checkedOut = !!dashboard?.todayAttendance?.check_out_time
   const isWFH = dashboard?.todayAttendance?.is_wfh ?? false
+  const wfhStarted = isWFH && !!dashboard?.todayAttendance?.wfh_start_time
+  const wfhEnded = !!dashboard?.todayAttendance?.wfh_end_time
 
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
 
@@ -274,14 +288,25 @@ function HRDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>
-              {checkedIn
-                ? `Checked in at ${new Date(dashboard!.todayAttendance!.check_in_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
-                : 'Not checked in today'}
+              {wfhStarted
+                ? `WFH since ${new Date(dashboard!.todayAttendance!.wfh_start_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
+                : checkedIn
+                  ? `Checked in at ${new Date(dashboard!.todayAttendance!.check_in_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
+                  : 'Not checked in today'}
             </span>
-            {checkedIn && !checkedOut && (
+            {wfhStarted && !wfhEnded && (
+              <span className="text-sm font-normal text-muted-foreground">WFH in progress</span>
+            )}
+            {wfhEnded && (
+              <span className="text-sm font-normal text-muted-foreground">
+                WFH ended at {new Date(dashboard!.todayAttendance!.wfh_end_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                {dashboard!.todayAttendance!.total_hours != null && ` (${formatHours(dashboard!.todayAttendance!.total_hours)})`}
+              </span>
+            )}
+            {!wfhStarted && checkedIn && !checkedOut && (
               <span className="text-sm font-normal text-muted-foreground">In progress</span>
             )}
-            {checkedOut && (
+            {!wfhStarted && checkedOut && (
               <span className="text-sm font-normal text-muted-foreground">
                 Checked out at {new Date(dashboard!.todayAttendance!.check_out_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
               </span>
@@ -297,10 +322,16 @@ function HRDashboard() {
             {checkOut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
             Check Out
           </Button>
-          <Button size="lg" variant="secondary" disabled={checkedIn || isWFH || logWFH.isPending} onClick={handleLogWFHClick}>
+          <Button size="lg" variant="secondary" disabled={checkedIn || wfhStarted || logWFH.isPending} onClick={handleLogWFHClick}>
             {logWFH.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Home className="mr-2 h-4 w-4" />}
             {isWFH ? 'WFH Logged' : 'Log WFH'}
           </Button>
+          {wfhStarted && !wfhEnded && (
+            <Button size="lg" variant="outline" disabled={endWFH.isPending} onClick={handleEndWFH}>
+              {endWFH.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+              End WFH
+            </Button>
+          )}
         </CardContent>
       </Card>
 
@@ -410,6 +441,7 @@ function EmployeeDashboardView() {
   const checkIn = useCheckIn()
   const checkOut = useCheckOut()
   const logWFH = useLogWFH()
+  const endWFH = useEndWFH()
 
   const [earlyCheckoutOpen, setEarlyCheckoutOpen] = useState(false)
   const [earlyCheckoutReason, setEarlyCheckoutReason] = useState('')
@@ -500,11 +532,24 @@ function EmployeeDashboardView() {
     }
   }
 
+  const handleEndWFH = async () => {
+    try {
+      const result = await endWFH.mutateAsync()
+      toast.success(`WFH ended. Total: ${formatHours(result.total_hours)}`)
+      refetch()
+    } catch (e: unknown) {
+      const err = e as { message?: string }
+      toast.error(err?.message ?? 'Failed to end WFH')
+    }
+  }
+
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
 
   const checkedIn = !!dashboard?.todayAttendance?.check_in_time
   const checkedOut = !!dashboard?.todayAttendance?.check_out_time
   const isWFH = dashboard?.todayAttendance?.is_wfh ?? false
+  const wfhStarted = isWFH && !!dashboard?.todayAttendance?.wfh_start_time
+  const wfhEnded = !!dashboard?.todayAttendance?.wfh_end_time
 
   return (
     <div className="space-y-6">
@@ -513,14 +558,25 @@ function EmployeeDashboardView() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>
-              {checkedIn
-                ? `Checked in at ${new Date(dashboard!.todayAttendance!.check_in_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
-                : 'Not checked in today'}
+              {wfhStarted
+                ? `WFH since ${new Date(dashboard!.todayAttendance!.wfh_start_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
+                : checkedIn
+                  ? `Checked in at ${new Date(dashboard!.todayAttendance!.check_in_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
+                  : 'Not checked in today'}
             </span>
-            {checkedIn && !checkedOut && (
+            {wfhStarted && !wfhEnded && (
+              <span className="text-sm font-normal text-muted-foreground">WFH in progress</span>
+            )}
+            {wfhEnded && (
+              <span className="text-sm font-normal text-muted-foreground">
+                WFH ended at {new Date(dashboard!.todayAttendance!.wfh_end_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                {dashboard!.todayAttendance!.total_hours != null && ` (${formatHours(dashboard!.todayAttendance!.total_hours)})`}
+              </span>
+            )}
+            {!wfhStarted && checkedIn && !checkedOut && (
               <span className="text-sm font-normal text-muted-foreground">In progress</span>
             )}
-            {checkedOut && (
+            {!wfhStarted && checkedOut && (
               <span className="text-sm font-normal text-muted-foreground">
                 Checked out at {new Date(dashboard!.todayAttendance!.check_out_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
               </span>
@@ -548,12 +604,18 @@ function EmployeeDashboardView() {
           <Button
             size="lg"
             variant="secondary"
-            disabled={checkedIn || isWFH || logWFH.isPending}
+            disabled={checkedIn || wfhStarted || logWFH.isPending}
             onClick={handleLogWFHClick}
           >
             {logWFH.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Home className="mr-2 h-4 w-4" />}
             {isWFH ? 'WFH Logged' : 'Log WFH'}
           </Button>
+          {wfhStarted && !wfhEnded && (
+            <Button size="lg" variant="outline" disabled={endWFH.isPending} onClick={handleEndWFH}>
+              {endWFH.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+              End WFH
+            </Button>
+          )}
         </CardContent>
       </Card>
 

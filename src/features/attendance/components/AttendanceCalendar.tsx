@@ -170,19 +170,27 @@ export function AttendanceCalendar({ records, year, month, onPrevMonth, onNextMo
             <div className="space-y-2 text-sm">
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded border p-2">
-                  <p className="text-xs text-muted-foreground">Check-in</p>
+                  <p className="text-xs text-muted-foreground">{selectedDay.is_wfh ? 'WFH start' : 'Check-in'}</p>
                   <p className="font-medium">
-                    {selectedDay.check_in_time
-                      ? new Date(selectedDay.check_in_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
-                      : '—'}
+                    {selectedDay.is_wfh
+                      ? selectedDay.wfh_start_time
+                        ? new Date(selectedDay.wfh_start_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                        : '—'
+                      : selectedDay.check_in_time
+                        ? new Date(selectedDay.check_in_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                        : '—'}
                   </p>
                 </div>
                 <div className="rounded border p-2">
-                  <p className="text-xs text-muted-foreground">Check-out</p>
+                  <p className="text-xs text-muted-foreground">{selectedDay.is_wfh ? 'WFH end' : 'Check-out'}</p>
                   <p className="font-medium">
-                    {selectedDay.check_out_time
-                      ? new Date(selectedDay.check_out_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
-                      : '—'}
+                    {selectedDay.is_wfh
+                      ? selectedDay.wfh_end_time
+                        ? new Date(selectedDay.wfh_end_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                        : '—'
+                      : selectedDay.check_out_time
+                        ? new Date(selectedDay.check_out_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                        : '—'}
                   </p>
                 </div>
               </div>

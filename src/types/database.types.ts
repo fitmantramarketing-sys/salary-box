@@ -113,6 +113,8 @@ export type Database = {
           status: Database["public"]["Enums"]["attendance_status"]
           total_hours: number | null
           updated_at: string
+          wfh_end_time: string | null
+          wfh_start_time: string | null
         }
         Insert: {
           check_in_ip?: unknown
@@ -142,6 +144,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["attendance_status"]
           total_hours?: number | null
           updated_at?: string
+          wfh_end_time?: string | null
+          wfh_start_time?: string | null
         }
         Update: {
           check_in_ip?: unknown
@@ -171,6 +175,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["attendance_status"]
           total_hours?: number | null
           updated_at?: string
+          wfh_end_time?: string | null
+          wfh_start_time?: string | null
         }
         Relationships: [
           {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTodayAttendance } from '../hooks'
-import { useCheckIn, useCheckOut, useLogWFH } from '../mutations'
+import { useCheckIn, useCheckOut, useLogWFH, useEndWFH } from '../mutations'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, Clock, LogOut, Home, AlertTriangle } from 'lucide-react'
@@ -21,6 +21,7 @@ export function CheckInOutCard() {
   const checkIn = useCheckIn()
   const checkOut = useCheckOut()
   const logWFH = useLogWFH()
+  const endWFH = useEndWFH()
 
   const [lateWarning, setLateWarning] = useState<{ count: number; threshold: number } | null>(null)
   const [earlyCheckoutOpen, setEarlyCheckoutOpen] = useState(false)
@@ -122,9 +123,22 @@ export function CheckInOutCard() {
     }
   }
 
+  const handleEndWFH = async () => {
+    try {
+      const result = await endWFH.mutateAsync()
+      toast.success(`WFH ended. Total: ${formatHours(result.total_hours)}`)
+      refetch()
+    } catch (e: unknown) {
+      const err = e as { message?: string }
+      toast.error(err?.message ?? 'Failed to end WFH')
+    }
+  }
+
   const checkedIn = !!today?.check_in_time
   const checkedOut = !!today?.check_out_time
   const isWFH = today?.is_wfh ?? false
+  const wfhStarted = isWFH && !!today?.wfh_start_time
+  const wfhEnded = !!today?.wfh_end_time
 
   if (isLoading) {
     return (
@@ -143,7 +157,15 @@ export function CheckInOutCard() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between text-base">
             <span>Today</span>
-            {checkedIn && today?.check_in_time && (
+            {wfhStarted && (
+              <span className="text-sm font-normal text-muted-foreground">
+                {wfhEnded
+                  ? `${new Date(today!.wfh_start_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} — ${new Date(today!.wfh_end_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
+                  : `${new Date(today!.wfh_start_time!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} — In progress`}
+                {today.total_hours != null && ` (${formatHours(today.total_hours)})`}
+              </span>
+            )}
+            {!wfhStarted && checkedIn && today?.check_in_time && (
               <span className="text-sm font-normal text-muted-foreground">
                 {new Date(today.check_in_time).toLocaleTimeString('en-IN', {
                   hour: '2-digit',
@@ -187,12 +209,23 @@ export function CheckInOutCard() {
             <Button
               size="lg"
               variant="secondary"
-              disabled={checkedIn || isWFH || logWFH.isPending}
+              disabled={checkedIn || wfhStarted || logWFH.isPending}
               onClick={handleLogWFHClick}
             >
               {logWFH.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Home className="mr-2 h-4 w-4" />}
               {isWFH ? 'WFH Logged' : 'Log WFH'}
             </Button>
+            {wfhStarted && !wfhEnded && (
+              <Button
+                size="lg"
+                variant="outline"
+                disabled={endWFH.isPending}
+                onClick={handleEndWFH}
+              >
+                {endWFH.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
+                End WFH
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -17,7 +17,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: existing } = await supabase
       .from('attendance_records')
-      .select('id, status, check_in_time')
+      .select('id, status, check_in_time, wfh_start_time, wfh_end_time')
       .eq('employee_id', actor.actorId)
       .eq('date', today)
       .maybeSingle()
@@ -38,6 +38,16 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    if (existing?.wfh_start_time) {
+      throw {
+        code: 'CONFLICT',
+        message: 'WFH already logged for today.',
+        status: 409,
+      }
+    }
+
+    const now = new Date().toISOString()
+
     const shift = await resolveShift(actor.actorId, today)
     const holidayFlag = await isHoliday(actor.actorId, today)
     const woffFlag = isWeeklyOff(shift, today)
@@ -52,6 +62,8 @@ Deno.serve(async (req: Request) => {
       total_hours: null,
       is_late: false,
       is_manually_entered: false,
+      wfh_start_time: now,
+      wfh_end_time: null,
     }
 
     const { status, is_late, total_hours } = computeStatus(rec, shift, holidayFlag, woffFlag)
@@ -66,10 +78,12 @@ Deno.serve(async (req: Request) => {
           status,
           is_late,
           total_hours,
+          wfh_start_time: now,
+          wfh_end_time: null,
         },
         { onConflict: 'employee_id, date', ignoreDuplicates: false }
       )
-      .select('id, is_wfh, status')
+      .select('id, is_wfh, status, wfh_start_time')
       .single()
 
     if (error) throw error
@@ -78,6 +92,7 @@ Deno.serve(async (req: Request) => {
       attendance_record_id: record.id,
       is_wfh: record.is_wfh,
       status: record.status,
+      wfh_start_time: record.wfh_start_time,
     })
   } catch (e) {
     return handleError(e)

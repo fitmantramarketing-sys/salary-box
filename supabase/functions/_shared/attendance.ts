@@ -71,6 +71,8 @@ export type AttendanceRecordForCompute = {
   total_hours?: number | null
   is_late: boolean
   is_manually_entered: boolean
+  wfh_start_time?: string | null
+  wfh_end_time?: string | null
 }
 
 export function computeStatus(
@@ -95,7 +97,19 @@ export function computeStatus(
     return { status: 'weekly_off', total_hours: null, is_late: false }
   }
 
-  if (record.is_wfh && !record.check_in_time) {
+  // WFH day — track hours from wfh_start_time → wfh_end_time (capped at shift end)
+  if (record.is_wfh) {
+    if (record.wfh_start_time && record.wfh_end_time) {
+      const effective = getEffectiveTimes(shift, record.date)
+      const totalHours = computeTotalHours(
+        record.wfh_start_time,
+        record.wfh_end_time,
+        shift.break_minutes,
+        shift.is_night_shift,
+        effective.end_time
+      )
+      return { status: 'work_from_home', total_hours: totalHours, is_late: false }
+    }
     return { status: 'work_from_home', total_hours: null, is_late: false }
   }
 
