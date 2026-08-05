@@ -590,6 +590,7 @@ function PendingReviewsTab() {
 export default function RegularizationPage() {
   const { isOwner, isHR } = useRole()
   const isAdmin = isOwner || isHR
+  const showSelfService = !isOwner
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') || (isAdmin ? 'early-checkouts' : 'my')
 
@@ -597,7 +598,7 @@ export default function RegularizationPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <h1 className="text-xl sm:text-2xl font-semibold">Attendance Regularization</h1>
-        <NewRequestDialog />
+        {showSelfService && <NewRequestDialog />}
       </div>
 
       {isAdmin ? (
@@ -605,7 +606,7 @@ export default function RegularizationPage() {
           <TabsList>
             {(isOwner || isHR) && <TabsTrigger value="early-checkouts">Early Checkouts</TabsTrigger>}
             {(isOwner || isHR) && <TabsTrigger value="pending">Pending Reviews</TabsTrigger>}
-            <TabsTrigger value="my">My Requests</TabsTrigger>
+            {showSelfService && <TabsTrigger value="my">My Requests</TabsTrigger>}
           </TabsList>
           {(isOwner || isHR) && (
             <TabsContent value="early-checkouts"><EarlyCheckoutsTab /></TabsContent>
@@ -613,7 +614,7 @@ export default function RegularizationPage() {
           {(isOwner || isHR) && (
             <TabsContent value="pending"><PendingReviewsTab /></TabsContent>
           )}
-          <TabsContent value="my"><MyRequestsTab /></TabsContent>
+          {showSelfService && <TabsContent value="my"><MyRequestsTab /></TabsContent>}
         </Tabs>
       ) : (
         <MyRequestsTab />
