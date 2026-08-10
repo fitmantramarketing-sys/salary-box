@@ -148,3 +148,33 @@ export function useReactivateEmployee() {
     },
   })
 }
+
+export function useChangeLoginEmail() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { employee_id: string; new_email: string }) =>
+      callEdgeFunction<{ employee_id: string; new_email: string }, { employee_id: string; email: string }>(
+        'change-login-email',
+        body
+      ),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['employees', 'detail', variables.employee_id] })
+      qc.invalidateQueries({ queryKey: ['employees', 'list'] })
+    },
+  })
+}
+
+export function useDeleteEmployee() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { employee_id: string; confirmation: string }) =>
+      callEdgeFunction<{ employee_id: string; confirmation: string }, { deleted: boolean }>(
+        'delete-employee',
+        body
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['employees', 'list'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}

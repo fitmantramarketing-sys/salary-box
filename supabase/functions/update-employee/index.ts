@@ -3,7 +3,7 @@ import { getServiceClient } from '../_shared/supabase.ts'
 import { ok, err, cors, handleError } from '../_shared/response.ts'
 
 const OWNER_FIELDS = [
-  'first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'gender',
+  'first_name', 'last_name', 'phone', 'date_of_birth', 'gender',
   'personal_email', 'address_line1', 'address_line2', 'city', 'state', 'pincode',
   'emergency_contact_name', 'emergency_contact_phone', 'guardian_email', 'photo_url',
   'department_id', 'designation_id', 'reporting_manager_id',

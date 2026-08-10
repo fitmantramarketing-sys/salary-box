@@ -12,6 +12,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { AlertTriangle, UserX, UserCheck } from 'lucide-react'
 import { useState } from 'react'
 import { EmployeeOverviewTab } from './EmployeeOverviewTab'
+import { ChangeLoginEmailDialog } from './ChangeLoginEmailDialog'
+import { DeleteEmployeeDialog } from './DeleteEmployeeDialog'
 import { EmployeeDocumentsTab } from './EmployeeDocumentsTab'
 import { EmployeeBankDetailsTab } from './EmployeeBankDetailsTab'
 import { EmployeeLifecycleTab } from './EmployeeLifecycleTab'
@@ -112,7 +114,9 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
             <AlertTriangle className="h-5 w-5" />
             <span className="font-medium">This employee is deactivated</span>
           </div>
-          <AlertDialog open={reactivateOpen} onOpenChange={setReactivateOpen}>
+          <div className="flex items-center gap-2">
+            {!isOwnProfile && <DeleteEmployeeDialog employee={employee} />}
+            <AlertDialog open={reactivateOpen} onOpenChange={setReactivateOpen}>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm">
                 <UserCheck className="mr-2 h-4 w-4" />
@@ -139,11 +143,14 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          </div>
         </div>
       )}
 
-      {!isDeactivated && isOwner && !isOwnProfile && (
-        <div className="flex justify-end">
+      {!isDeactivated && isOwner && (
+        <div className="flex justify-end gap-2">
+          <ChangeLoginEmailDialog employee={employee} />
+          {!isOwnProfile && (
           <AlertDialog open={deactivateOpen} onOpenChange={setDeactivateOpen}>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm">
@@ -171,6 +178,7 @@ export function EmployeeDetailTabs({ employeeId }: Props) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          )}
         </div>
       )}
 

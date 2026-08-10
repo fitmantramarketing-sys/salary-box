@@ -24,7 +24,6 @@ import { z } from 'zod'
 const editEmployeeSchema = z.object({
   first_name: z.string().min(1, 'Required'),
   last_name: z.string().min(1, 'Required'),
-  email: z.string().email('Enter a valid email'),
   phone: z.string().optional(),
   date_of_birth: z.string().optional(),
   gender: z.enum(['male', 'female', 'other']).optional().or(z.literal('')),
@@ -60,7 +59,7 @@ export default function EditEmployeePage() {
   const form = useForm<EditForm>({
     resolver: zodResolver(editEmployeeSchema),
     defaultValues: {
-      first_name: '', last_name: '', email: '', phone: '', date_of_birth: '',
+      first_name: '', last_name: '', phone: '', date_of_birth: '',
       gender: '' as EditForm['gender'], personal_email: '', address_line1: '', address_line2: '',
       city: '', state: '', pincode: '', emergency_contact_name: '', emergency_contact_phone: '',
       department_id: '', designation_id: '', reporting_manager_id: '',
@@ -73,7 +72,6 @@ export default function EditEmployeePage() {
       form.reset({
         first_name: employee.first_name,
         last_name: employee.last_name,
-        email: employee.email,
         phone: employee.phone ?? '',
         date_of_birth: employee.date_of_birth ?? '',
         gender: (employee.gender as EditForm['gender']) ?? '',
@@ -151,9 +149,6 @@ export default function EditEmployeePage() {
               )} />
               <FormField control={form.control} name="last_name" render={({ field }) => (
                 <FormItem><FormLabel>Last Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="email" render={({ field }) => (
-                <FormItem><FormLabel>Work Email *</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="phone" render={({ field }) => (
                 <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
