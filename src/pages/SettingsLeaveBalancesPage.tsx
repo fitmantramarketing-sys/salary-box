@@ -4,7 +4,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -157,7 +156,7 @@ export default function SettingsLeaveBalancesPage() {
               No active employees found.
             </p>
           ) : (
-            <ScrollArea className="w-full">
+            <div className="max-h-[calc(100vh-220px)] overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -249,7 +248,7 @@ export default function SettingsLeaveBalancesPage() {
                                     </button>
                                   )
                                 ) : (
-                                  <span className="text-muted-foreground text-sm">—</span>
+                                  <span className="text-muted-foreground text-sm">0</span>
                                 )}
                               </TableCell>
                               <TableCell key={`${lt!.id}-opening`}>
@@ -277,7 +276,7 @@ export default function SettingsLeaveBalancesPage() {
                                     </button>
                                   )
                                 ) : (
-                                  <span className="text-muted-foreground text-sm">—</span>
+                                  <span className="text-muted-foreground text-sm">0</span>
                                 )}
                               </TableCell>
                               <TableCell key={`${lt!.id}-adjusted`}>
@@ -305,7 +304,7 @@ export default function SettingsLeaveBalancesPage() {
                                     </button>
                                   )
                                 ) : (
-                                  <span className="text-muted-foreground text-sm">—</span>
+                                  <span className="text-muted-foreground text-sm">0</span>
                                 )}
                               </TableCell>
                               <TableCell key={`${lt!.id}-total`}>
@@ -319,7 +318,7 @@ export default function SettingsLeaveBalancesPage() {
                   })}
                 </TableBody>
               </Table>
-            </ScrollArea>
+            </div>
           )}
         </CardContent>
       </Card>
