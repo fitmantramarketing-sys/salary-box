@@ -8,6 +8,7 @@ import { AttendanceCalendar } from '@/features/attendance/components/AttendanceC
 import { AttendanceSummaryCards } from '@/features/attendance/components/AttendanceSummaryCards'
 import { fetchMyAttendance } from '@/features/attendance/api'
 import { fetchSelfAttendance } from '@/features/reports/api'
+import { formatHours } from '@/features/attendance/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
@@ -270,7 +271,7 @@ export default function EmployeeAttendanceDrillDownPage() {
                     </TableCell>
                     <TableCell className="font-mono text-xs">{r.isWfh ? (r.wfhStart ? new Date(r.wfhStart).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—') : (r.checkIn ? new Date(r.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—')}</TableCell>
                     <TableCell className="font-mono text-xs">{r.isWfh ? (r.wfhEnd ? new Date(r.wfhEnd).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—') : (r.checkOut ? new Date(r.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—')}</TableCell>
-                    <TableCell>{r.totalHours?.toFixed(1) ?? '—'}</TableCell>
+                    <TableCell>{formatHours(r.totalHours)}</TableCell>
                     <TableCell>{r.isLate ? 'Yes' : 'No'}</TableCell>
                     <TableCell>{r.isWfh ? 'Yes' : 'No'}</TableCell>
                   </TableRow>

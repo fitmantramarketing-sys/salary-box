@@ -3,6 +3,7 @@ import { useAuthStore } from '@/hooks/useAuth'
 import { useRole } from '@/hooks/useRole'
 import { useAttendanceReport, useSelfAttendance, useAbsenteeismData, useDepartments } from '@/features/reports/hooks'
 import { downloadCSV } from '@/features/reports/utils'
+import { formatHours } from '@/features/attendance/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -174,7 +175,7 @@ export default function ReportsAttendancePage() {
                           </TableCell>
                           <TableCell className="font-mono text-xs">{formatTime(r.isWfh ? (r.wfhStart ?? r.checkIn) : r.checkIn)}</TableCell>
                           <TableCell className="font-mono text-xs">{formatTime(r.isWfh ? (r.wfhEnd ?? r.checkOut) : r.checkOut)}</TableCell>
-                          <TableCell>{r.totalHours?.toFixed(1) ?? '—'}</TableCell>
+                          <TableCell>{formatHours(r.totalHours)}</TableCell>
                           <TableCell>{r.isLate ? 'Yes' : 'No'}</TableCell>
                           <TableCell>{r.isWfh ? 'Yes' : 'No'}</TableCell>
                         </TableRow>

@@ -215,7 +215,7 @@ function HRDashboard() {
         latitude: coords.latitude,
         longitude: coords.longitude,
       })
-      toast.success(`Checked out. Total: ${result.total_hours}h`)
+      toast.success(`Checked out. Total: ${formatHours(result.total_hours)}`)
       refetch()
     } catch (e: unknown) {
       const err = e as { message?: string; code?: string }
@@ -241,7 +241,7 @@ function HRDashboard() {
         early_checkout_reason: earlyCheckoutReason.trim(),
       })
       setEarlyCheckoutOpen(false)
-      toast.success(`Checked out. Total: ${result.total_hours}h`)
+      toast.success(`Checked out. Total: ${formatHours(result.total_hours)}`)
       refetch()
     } catch (e: unknown) {
       const err = e as { message?: string }
@@ -484,7 +484,7 @@ function EmployeeDashboardView() {
         latitude: coords.latitude,
         longitude: coords.longitude,
       })
-      toast.success(`Checked out. Total: ${result.total_hours}h`)
+      toast.success(`Checked out. Total: ${formatHours(result.total_hours)}`)
       refetch()
     } catch (e: unknown) {
       const err = e as { message?: string; code?: string }
@@ -510,7 +510,7 @@ function EmployeeDashboardView() {
         early_checkout_reason: earlyCheckoutReason.trim(),
       })
       setEarlyCheckoutOpen(false)
-      toast.success(`Checked out. Total: ${result.total_hours}h`)
+      toast.success(`Checked out. Total: ${formatHours(result.total_hours)}`)
       refetch()
     } catch (e: unknown) {
       const err = e as { message?: string }

@@ -53,8 +53,8 @@ function exportCSV(rows: DailyAttendanceRow[], dateStr: string) {
     r.employeeName,
     r.employeeCode,
     r.departmentName ?? '',
-    formatTime(r.checkIn),
-    formatTime(r.checkOut),
+    formatTime(r.isWfh ? (r.wfhStart ?? r.checkIn) : r.checkIn),
+    formatTime(r.isWfh ? (r.wfhEnd ?? r.checkOut) : r.checkOut),
     r.status === 'absent' || r.status === 'holiday' || r.status === 'weekly_off'
       ? r.status.replace(/_/g, ' ')
       : r.isLate ? 'Yes' : 'No',
@@ -105,11 +105,11 @@ function MobileCard({ r }: { r: DailyAttendanceRow }) {
           <div className="grid grid-cols-3 gap-2 text-xs pt-1 border-t">
             <div>
               <p className="text-muted-foreground">Check In</p>
-              <p className="font-mono font-medium">{formatTime(r.checkIn)}</p>
+              <p className="font-mono font-medium">{formatTime(r.isWfh ? (r.wfhStart ?? r.checkIn) : r.checkIn)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Check Out</p>
-              <p className="font-mono font-medium">{formatTime(r.checkOut)}</p>
+              <p className="font-mono font-medium">{formatTime(r.isWfh ? (r.wfhEnd ?? r.checkOut) : r.checkOut)}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Hours</p>
@@ -197,8 +197,8 @@ export default function DailyAttendanceReportPage() {
                             </div>
                             <p className="text-[10px] text-muted-foreground">{r.departmentName ?? '—'}</p>
                           </TableCell>
-                          <TableCell className="font-mono text-xs">{formatTime(r.checkIn)}</TableCell>
-                          <TableCell className="font-mono text-xs">{formatTime(r.checkOut)}</TableCell>
+                          <TableCell className="font-mono text-xs">{formatTime(r.isWfh ? (r.wfhStart ?? r.checkIn) : r.checkIn)}</TableCell>
+                          <TableCell className="font-mono text-xs">{formatTime(r.isWfh ? (r.wfhEnd ?? r.checkOut) : r.checkOut)}</TableCell>
                           <TableCell>
                             {r.status === 'absent' || r.status === 'holiday' || r.status === 'weekly_off' ? (
                               <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_CLASS[r.status] ?? ''}`}>

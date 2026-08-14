@@ -313,6 +313,8 @@ export type DailyAttendanceRow = {
   departmentName: string | null
   checkIn: string | null
   checkOut: string | null
+  wfhStart: string | null
+  wfhEnd: string | null
   totalHours: number | null
   isLate: boolean
   isWfh: boolean
@@ -375,6 +377,8 @@ export async function fetchDailyAttendance(date: string): Promise<DailyAttendanc
       departmentName: dept?.name ?? null,
       checkIn: rec?.check_in_time ?? null,
       checkOut: rec?.check_out_time ?? null,
+      wfhStart: rec?.wfh_start_time ?? null,
+      wfhEnd: rec?.wfh_end_time ?? null,
       totalHours: rec?.total_hours ?? null,
       isLate: rec?.is_late ?? false,
       isWfh: rec?.is_wfh ?? false,

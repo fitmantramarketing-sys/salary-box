@@ -24,11 +24,11 @@ function esc(s: string | null | undefined): string {
 }
 
 function fmtTime(iso: string | null | undefined): string {
-  if (!iso) return '—'
+  if (!iso) return 'N/A'
   return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
 }
 
-// Cron: daily at 10:30 IST (05:00 UTC) — sends today's check-in, WFH, late status to the owner
+// Cron: daily at 10:30 IST (05:00 UTC) - sends today's check-in, WFH, late status to the owner
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
 
@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
       const body = await req.json()
       overrideTo = typeof body?.to === 'string' && body.to.trim() ? body.to.trim() : null
     } catch {
-      // No body → cron invocation
+      // No body -> cron invocation
     }
 
     const { data: owner } = await supabase
@@ -115,7 +115,7 @@ Deno.serve(async (req: Request) => {
       return {
         name: `${emp.first_name} ${emp.last_name}`,
         code: emp.employee_code,
-        department: dept?.name ?? '—',
+        department: dept?.name ?? '-',
         status,
         checkIn: rec?.check_in_time ?? null,
         isLate: rec?.is_late ?? false,
@@ -147,8 +147,8 @@ Deno.serve(async (req: Request) => {
             <td style="padding: 6px 8px; font-size: 13px;">${esc(r.department)}</td>
             <td style="padding: 6px 8px; font-size: 13px;">${r.status === 'not_checked_in' ? statusLabel : esc(statusCell ?? r.status)}</td>
             <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">${fmtTime(r.checkIn)}</td>
-            <td style="padding: 6px 8px; font-size: 13px; text-align: center;">${r.isWfh ? 'Yes' : '—'}</td>
-            <td style="padding: 6px 8px; font-size: 13px; text-align: center;">${r.isLate ? 'Yes' : '—'}</td>
+            <td style="padding: 6px 8px; font-size: 13px; text-align: center;">${r.isWfh ? 'Yes' : 'N/A'}</td>
+            <td style="padding: 6px 8px; font-size: 13px; text-align: center;">${r.isLate ? 'Yes' : 'N/A'}</td>
           </tr>`
         }
       )
@@ -158,7 +158,7 @@ Deno.serve(async (req: Request) => {
 
     await sendEmail({
       to: overrideTo ?? owner.email,
-      subject: `Check-In Summary — ${today}`,
+      subject: `Check-In Summary - ${today}`,
       html: `
         <h2 style="margin: 0 0 4px;">Midday Check-In Summary</h2>
         <p style="margin: 0 0 16px; color: #666; font-size: 13px;">${today}${dayLabel}</p>

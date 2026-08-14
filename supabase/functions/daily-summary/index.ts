@@ -24,11 +24,19 @@ function esc(s: string | null | undefined): string {
 }
 
 function fmtTime(iso: string | null | undefined): string {
-  if (!iso) return 'â€”'
+  if (!iso) return 'N/A'
   return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
 }
 
-// Cron: daily at 20:00 IST (14:30 UTC) — sends today's full summary to the owner
+function fmtHours(h: number | null | undefined): string {
+  if (h == null) return 'N/A'
+  const hh = Math.floor(h)
+  const mm = Math.round((h - hh) * 60)
+  if (mm === 60) return `${hh + 1}h`
+  return mm > 0 ? `${hh}h ${mm}m` : `${hh}h`
+}
+
+// Cron: daily at 20:00 IST (14:30 UTC) - sends today's full summary to the owner
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return cors()
 
@@ -40,7 +48,7 @@ Deno.serve(async (req: Request) => {
       const body = await req.json()
       overrideTo = typeof body?.to === 'string' && body.to.trim() ? body.to.trim() : null
     } catch {
-      // No body â†’ cron invocation
+      // No body -> cron invocation
     }
 
     const { data: owner } = await supabase
@@ -124,7 +132,7 @@ Deno.serve(async (req: Request) => {
       return {
         name: `${emp.first_name} ${emp.last_name}`,
         code: emp.employee_code,
-        department: dept?.name ?? 'â€”',
+        department: dept?.name ?? '-',
         status,
         checkIn: rec?.check_in_time ?? null,
         checkOut: rec?.check_out_time ?? null,
@@ -156,8 +164,8 @@ Deno.serve(async (req: Request) => {
             <td style="padding: 6px 8px; font-size: 13px;">${esc(STATUS_LABELS[r.status] ?? r.status)}</td>
             <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">${fmtTime(r.checkIn)}</td>
             <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">${fmtTime(r.checkOut)}</td>
-            <td style="padding: 6px 8px; font-size: 13px; text-align: right;">${r.hours != null ? r.hours.toFixed(2) : 'â€”'}</td>
-            <td style="padding: 6px 8px; font-size: 13px; text-align: center;">${r.isLate ? 'Yes' : 'â€”'}</td>
+            <td style="padding: 6px 8px; font-size: 13px; text-align: right;">${fmtHours(r.hours)}</td>
+            <td style="padding: 6px 8px; font-size: 13px; text-align: center;">${r.isLate ? 'Yes' : 'N/A'}</td>
           </tr>`
       )
       .join('')
@@ -170,7 +178,7 @@ Deno.serve(async (req: Request) => {
         .map((a) => {
           const emp = a.employee as { first_name?: string; last_name?: string; employee_code?: string } | null
           const lt = a.leave_type as { name?: string } | null
-          return `<li style="font-size: 13px; margin-bottom: 4px;"><strong>${esc(emp?.first_name ?? '')} ${esc(emp?.last_name ?? '')}</strong> (${esc(emp?.employee_code ?? '')}) â€” ${esc(lt?.name ?? '')} â€” ${esc(a.from_date)} to ${esc(a.to_date)}</li>`
+          return `<li style="font-size: 13px; margin-bottom: 4px;"><strong>${esc(emp?.first_name ?? '')} ${esc(emp?.last_name ?? '')}</strong> (${esc(emp?.employee_code ?? '')}) - ${esc(lt?.name ?? '')} - ${esc(a.from_date)} to ${esc(a.to_date)}</li>`
         })
         .join('')
       pendingSections.push(`<h3 style="font-size: 14px; margin: 20px 0 8px; color: #b45309;">Pending Leave Applications (${leaveApps.length})</h3><ul style="margin: 0; padding-left: 20px;">${items}</ul>`)
@@ -182,7 +190,7 @@ Deno.serve(async (req: Request) => {
         .map((r) => {
           const emp = r.employee as { first_name?: string; last_name?: string; employee_code?: string } | null
           const att = r.attendance_record as { date?: string } | null
-          return `<li style="font-size: 13px; margin-bottom: 4px;"><strong>${esc(emp?.first_name ?? '')} ${esc(emp?.last_name ?? '')}</strong> (${esc(emp?.employee_code ?? '')}) â€” ${esc(att?.date ?? '')} â€” requested: ${esc(r.requested_status)}</li>`
+          return `<li style="font-size: 13px; margin-bottom: 4px;"><strong>${esc(emp?.first_name ?? '')} ${esc(emp?.last_name ?? '')}</strong> (${esc(emp?.employee_code ?? '')}) - ${esc(att?.date ?? '')} - requested: ${esc(r.requested_status)}</li>`
         })
         .join('')
       pendingSections.push(`<h3 style="font-size: 14px; margin: 20px 0 8px; color: #b45309;">Pending Regularization Requests (${regRequests.length})</h3><ul style="margin: 0; padding-left: 20px;">${items}</ul>`)
@@ -193,7 +201,7 @@ Deno.serve(async (req: Request) => {
       const items = earlyCheckouts
         .map((r) => {
           const emp = r.employee as { first_name?: string; last_name?: string; employee_code?: string } | null
-          return `<li style="font-size: 13px; margin-bottom: 4px;"><strong>${esc(emp?.first_name ?? '')} ${esc(emp?.last_name ?? '')}</strong> (${esc(emp?.employee_code ?? '')}) â€” ${esc(r.date)}</li>`
+          return `<li style="font-size: 13px; margin-bottom: 4px;"><strong>${esc(emp?.first_name ?? '')} ${esc(emp?.last_name ?? '')}</strong> (${esc(emp?.employee_code ?? '')}) - ${esc(r.date)}</li>`
         })
         .join('')
       pendingSections.push(`<h3 style="font-size: 14px; margin: 20px 0 8px; color: #b45309;">Pending Early Checkouts (${earlyCheckouts.length})</h3><ul style="margin: 0; padding-left: 20px;">${items}</ul>`)
@@ -205,7 +213,7 @@ Deno.serve(async (req: Request) => {
 
     await sendEmail({
       to: overrideTo ?? owner.email,
-      subject: `Daily Attendance Summary — ${today}`,
+      subject: `Daily Attendance Summary - ${today}`,
       html: `
         <h2 style="margin: 0 0 4px;">Daily Attendance Summary</h2>
         <p style="margin: 0 0 16px; color: #666; font-size: 13px;">${today}${dayLabel}</p>
