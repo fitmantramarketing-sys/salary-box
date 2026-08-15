@@ -623,24 +623,39 @@ function EmployeeDashboardView() {
 
       {/* Leave Balances */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {dashboard?.leaveBalances?.map((lb) => (
-          <Card key={lb.id}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">
-                {lb.leave_type?.name ?? 'Leave'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {(Number(lb.accrued) + Number(lb.opening_balance) + Number(lb.carry_forward_amount) - Number(lb.taken) - Number(lb.pending)).toFixed(1)}
-              </div>
-              <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                <span>Used: {lb.taken}</span>
-                <span>Pending: {lb.pending}</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {dashboard?.leaveBalances?.map((lb) => {
+          const isPL = lb.leave_type?.code === 'PL'
+          const available =
+            Number(lb.accrued) + Number(lb.opening_balance) + Number(lb.carry_forward_amount) + Number(lb.adjusted) - Number(lb.taken) - Number(lb.pending)
+          const plUsed = Math.max(0, Number(lb.opening_balance) - available)
+          return (
+            <Card key={lb.id}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {lb.leave_type?.name ?? 'Leave'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {available.toFixed(1)}
+                </div>
+                <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                  {isPL ? (
+                    <>
+                      <span>Used: {plUsed}</span>
+                      <span>Pending: {available}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Used: {lb.taken}</span>
+                      <span>Pending: {lb.pending}</span>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
         <Link to="/leave/apply" className="flex items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 p-4 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors">
           Apply for leave <ArrowRight className="ml-1 h-3 w-3" />
         </Link>

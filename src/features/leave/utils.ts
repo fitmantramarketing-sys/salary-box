@@ -18,3 +18,25 @@ export function getAvailableBalance(balance: LeaveBalance): number {
     balance.pending
   )
 }
+
+type LeaveBalanceWithLeaveType = LeaveBalance & {
+  leave_type?: { code?: string } | null
+}
+
+export function isPrivilegeLeave(balance: LeaveBalanceWithLeaveType): boolean {
+  return balance.leave_type?.code === 'PL'
+}
+
+export function getPLBalanceMetrics(
+  balance: LeaveBalanceWithLeaveType
+): { used: number; pending: number } {
+  const available = getAvailableBalance(balance)
+  return {
+    used: Math.max(0, balance.opening_balance - available),
+    pending: available,
+  }
+}
+
+export function getPLRemaining(balance: LeaveBalanceWithLeaveType): number {
+  return Math.max(0, getAvailableBalance(balance))
+}

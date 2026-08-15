@@ -2,6 +2,7 @@ import { useEmployeeLeaveBalances } from '@/features/employees/hooks'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
+import { getPLBalanceMetrics, getPLRemaining, isPrivilegeLeave } from '@/features/leave/utils'
 
 type Props = { employeeId: string }
 
@@ -38,8 +39,11 @@ export function EmployeeLeaveTab({ employeeId }: Props) {
       <CardContent className="space-y-4">
         {balances.map((bal) => {
           const total = bal.opening_balance + bal.accrued + bal.carry_forward_amount + bal.adjusted
-          const used = bal.taken + bal.pending
-          const remaining = Math.max(0, total - used)
+          const isPL = isPrivilegeLeave(bal)
+          const used = isPL ? getPLBalanceMetrics(bal).used : bal.taken + bal.pending
+          const remaining = isPL
+            ? getPLRemaining(bal)
+            : Math.max(0, total - used)
           const pct = total > 0 ? Math.round((used / total) * 100) : 0
 
           return (
