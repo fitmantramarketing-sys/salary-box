@@ -42,8 +42,6 @@ const NAV_GROUPS: NavGroup[] = [
     children: [
       { label: 'All Team Members', href: '/team-members', roles: ['owner', 'hr', 'system_admin'] },
       { label: 'Add Team Member', href: '/team-members/new', roles: ['owner'] },
-      { label: 'Bulk Import', href: '/team-members/bulk-import', roles: ['owner'] },
-      { label: 'Org Chart', href: '/org-chart', roles: ['owner', 'hr'] },
       { label: 'Profile Edits', href: '/team-members/profile-edits', roles: ['owner', 'hr'] },
     ],
   },
