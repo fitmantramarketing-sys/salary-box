@@ -63,6 +63,7 @@ export function TeamLeaveCalendar() {
             .from('employees')
             .select('id, first_name, last_name, employee_code')
             .eq('is_active', true)
+            .neq('role', 'owner')
             .order('first_name'),
           supabase
             .from('leave_applications')

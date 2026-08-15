@@ -247,7 +247,9 @@ export default function App() {
               <Route path="/attendance/regularization" element={<RegularizationPage />} />
 
               {/* Leave */}
-              <Route path="/leave" element={<LeaveDashboardPage />} />
+              <Route element={<RequireRole allow={['hr', 'employee']} />}>
+                <Route path="/leave" element={<LeaveDashboardPage />} />
+              </Route>
               <Route path="/leave/apply" element={<ApplyLeavePage />} />
               <Route path="/leave/applications/:id" element={<LeaveApplicationDetailPage />} />
               <Route element={<RequireRole allow={['owner', 'hr']} />}>
