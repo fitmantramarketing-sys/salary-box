@@ -39,6 +39,8 @@ const statusColor: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
 }
 
+const HIDDEN_EMPLOYEE_CODES = ['EMP-2026-0003']
+
 export function TeamLeaveCalendar() {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
@@ -69,7 +71,7 @@ export function TeamLeaveCalendar() {
             .lte('from_date', range.end),
         ])
         if (cancelled) return
-        setEmployees(empRes.data ?? [])
+        setEmployees((empRes.data ?? []).filter((e) => !HIDDEN_EMPLOYEE_CODES.includes(e.employee_code)))
         setApplications(appRes.data ?? [])
       } catch {
         // silent

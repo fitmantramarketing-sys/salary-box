@@ -1,6 +1,8 @@
 import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { sendEmail } from '../_shared/email.ts'
+import { getEffectiveTimes, resolveShift } from '../_shared/shift.ts'
+import { getISTMinutes } from '../_shared/attendance.ts'
 
 const STATUS_LABELS: Record<string, string> = {
   present: 'Present',
@@ -12,6 +14,7 @@ const STATUS_LABELS: Record<string, string> = {
   incomplete: 'Incomplete',
   holiday: 'Holiday',
   weekly_off: 'Weekly Off',
+  shift_yet_to_start: 'Shift Yet to Start',
 }
 
 function esc(s: string | null | undefined): string {
@@ -26,6 +29,21 @@ function esc(s: string | null | undefined): string {
 function fmtTime(iso: string | null | undefined): string {
   if (!iso) return 'N/A'
   return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
+}
+
+function fmtClock(clock: string | null | undefined): string {
+  if (!clock) return 'N/A'
+  const [hStr, mStr] = clock.split(':')
+  const h = Number(hStr)
+  const m = mStr ? Number(mStr) : 0
+  const period = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`
+}
+
+function clockToMinutes(clock: string): number {
+  const [hStr, mStr] = clock.split(':')
+  return Number(hStr) * 60 + (mStr ? Number(mStr) : 0)
 }
 
 // Cron: daily at 10:30 IST (05:00 UTC) - sends today's check-in, WFH, late status to the owner
@@ -102,20 +120,36 @@ Deno.serve(async (req: Request) => {
       recordMap.set(r.employee_id, r)
     }
 
+    const shiftStarts = await Promise.all(
+      employees.map(async (emp) => {
+        try {
+          const shift = await resolveShift(emp.id, today)
+          return { employeeId: emp.id, start: getEffectiveTimes(shift, today).start_time }
+        } catch {
+          return { employeeId: emp.id, start: null }
+        }
+      })
+    )
+    const shiftStartMap = new Map<string, string | null>(shiftStarts.map((s) => [s.employeeId, s.start]))
+    const nowMinutes = getISTMinutes(new Date().toISOString())
+
     const rows = employees.map((emp) => {
       const dept = emp.department as { name: string } | null
       const rec = recordMap.get(emp.id)
-      let status = rec?.status ?? 'not_checked_in'
+      const shiftStart = shiftStartMap.get(emp.id) ?? null
+      let status = rec?.status ?? 'absent'
       if (!rec) {
         if (onLeaveIds.has(emp.id)) status = 'on_leave'
         else if (isHoliday) status = 'holiday'
         else if (isWeeklyOff) status = 'weekly_off'
-        else status = 'not_checked_in'
+        else if (shiftStart && nowMinutes < clockToMinutes(shiftStart)) status = 'shift_yet_to_start'
+        else status = 'absent'
       }
       return {
         name: `${emp.first_name} ${emp.last_name}`,
         code: emp.employee_code,
         department: dept?.name ?? '-',
+        shiftStart,
         status,
         checkIn: rec?.check_in_time ?? null,
         isLate: rec?.is_late ?? false,
@@ -130,27 +164,24 @@ Deno.serve(async (req: Request) => {
       halfDay: count('half_day'),
       wfh: count('work_from_home'),
       onLeave: count('on_leave'),
-      notCheckedIn: count('not_checked_in'),
+      absent: count('absent'),
     }
 
     const attendanceTable = rows
       .map(
-        (r) => {
-          const statusLabel = r.status === 'not_checked_in'
-            ? '<span style="color:#dc2626;">Not Checked In</span>'
-            : STATUS_LABELS[r.status] ?? r.status
-          const statusCell = STATUS_LABELS[r.status] ? esc(STATUS_LABELS[r.status]) : null
-          return `
+        (r) => `
           <tr style="border-bottom: 1px solid #eee;">
             <td style="padding: 6px 8px; font-size: 13px;">${esc(r.name)}</td>
             <td style="padding: 6px 8px; font-size: 12px; color: #666;">${esc(r.code)}</td>
             <td style="padding: 6px 8px; font-size: 13px;">${esc(r.department)}</td>
-            <td style="padding: 6px 8px; font-size: 13px;">${r.status === 'not_checked_in' ? statusLabel : esc(statusCell ?? r.status)}</td>
+            <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">${fmtClock(r.shiftStart)}</td>
+            ${r.status === 'shift_yet_to_start'
+              ? '<td style="padding: 6px 8px; font-size: 13px; color: #2563eb;">Shift Yet to Start</td>'
+              : `<td style="padding: 6px 8px; font-size: 13px;">${esc(STATUS_LABELS[r.status] ?? r.status)}</td>`}
             <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">${fmtTime(r.checkIn)}</td>
             <td style="padding: 6px 8px; font-size: 13px; text-align: center;">${r.isWfh ? 'Yes' : 'N/A'}</td>
             <td style="padding: 6px 8px; font-size: 13px; text-align: center;">${r.isLate ? 'Yes' : 'N/A'}</td>
           </tr>`
-        }
       )
       .join('')
 
@@ -186,8 +217,8 @@ Deno.serve(async (req: Request) => {
               <div style="font-size: 11px; color: #666;">On Leave</div>
             </td>
             <td style="padding: 8px; text-align: center; background: #fef2f2; border: 1px solid #e2e2e2; border-radius: 6px; width: 16.6%;">
-              <div style="font-size: 20px; font-weight: 700; color: #dc2626;">${counts.notCheckedIn}</div>
-              <div style="font-size: 11px; color: #666;">Not Checked In</div>
+              <div style="font-size: 20px; font-weight: 700; color: #dc2626;">${counts.absent}</div>
+              <div style="font-size: 11px; color: #666;">Absent</div>
             </td>
           </tr>
         </table>
@@ -199,6 +230,7 @@ Deno.serve(async (req: Request) => {
               <th style="padding: 6px 8px; font-size: 12px;">Employee</th>
               <th style="padding: 6px 8px; font-size: 12px;">Code</th>
               <th style="padding: 6px 8px; font-size: 12px;">Department</th>
+              <th style="padding: 6px 8px; font-size: 12px;">Shift Start</th>
               <th style="padding: 6px 8px; font-size: 12px;">Status</th>
               <th style="padding: 6px 8px; font-size: 12px;">Check In</th>
               <th style="padding: 6px 8px; font-size: 12px; text-align: center;">WFH</th>

@@ -1,6 +1,8 @@
 ﻿import { ok, cors, handleError } from '../_shared/response.ts'
 import { getServiceClient } from '../_shared/supabase.ts'
 import { sendEmail } from '../_shared/email.ts'
+import { getEffectiveTimes, resolveShift } from '../_shared/shift.ts'
+import { getISTMinutes } from '../_shared/attendance.ts'
 
 const STATUS_LABELS: Record<string, string> = {
   present: 'Present',
@@ -12,6 +14,7 @@ const STATUS_LABELS: Record<string, string> = {
   incomplete: 'Incomplete',
   holiday: 'Holiday',
   weekly_off: 'Weekly Off',
+  shift_yet_to_start: 'Shift Yet to Start',
 }
 
 function esc(s: string | null | undefined): string {
@@ -34,6 +37,21 @@ function fmtHours(h: number | null | undefined): string {
   const mm = Math.round((h - hh) * 60)
   if (mm === 60) return `${hh + 1}h`
   return mm > 0 ? `${hh}h ${mm}m` : `${hh}h`
+}
+
+function fmtClock(clock: string | null | undefined): string {
+  if (!clock) return 'N/A'
+  const [hStr, mStr] = clock.split(':')
+  const h = Number(hStr)
+  const m = mStr ? Number(mStr) : 0
+  const period = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`
+}
+
+function clockToMinutes(clock: string): number {
+  const [hStr, mStr] = clock.split(':')
+  return Number(hStr) * 60 + (mStr ? Number(mStr) : 0)
 }
 
 // Cron: daily at 20:00 IST (14:30 UTC) - sends today's full summary to the owner
@@ -121,18 +139,35 @@ Deno.serve(async (req: Request) => {
       recordMap.set(r.employee_id, r)
     }
 
+    const shiftStarts = await Promise.all(
+      employees.map(async (emp) => {
+        try {
+          const shift = await resolveShift(emp.id, today)
+          return { employeeId: emp.id, start: getEffectiveTimes(shift, today).start_time }
+        } catch {
+          return { employeeId: emp.id, start: null }
+        }
+      })
+    )
+    const shiftStartMap = new Map<string, string | null>(shiftStarts.map((s) => [s.employeeId, s.start]))
+    const nowMinutes = getISTMinutes(new Date().toISOString())
+
     const rows = employees.map((emp) => {
       const dept = emp.department as { name: string } | null
       const rec = recordMap.get(emp.id)
+      const shiftStart = shiftStartMap.get(emp.id) ?? null
       let status = rec?.status ?? 'absent'
       if (!rec) {
         if (isHoliday) status = 'holiday'
         else if (isWeeklyOff) status = 'weekly_off'
+        else if (shiftStart && nowMinutes < clockToMinutes(shiftStart)) status = 'shift_yet_to_start'
+        else status = 'absent'
       }
       return {
         name: `${emp.first_name} ${emp.last_name}`,
         code: emp.employee_code,
         department: dept?.name ?? '-',
+        shiftStart,
         status,
         checkIn: rec?.check_in_time ?? null,
         checkOut: rec?.check_out_time ?? null,
@@ -161,6 +196,7 @@ Deno.serve(async (req: Request) => {
             <td style="padding: 6px 8px; font-size: 13px;">${esc(r.name)}</td>
             <td style="padding: 6px 8px; font-size: 12px; color: #666;">${esc(r.code)}</td>
             <td style="padding: 6px 8px; font-size: 13px;">${esc(r.department)}</td>
+            <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">${fmtClock(r.shiftStart)}</td>
             <td style="padding: 6px 8px; font-size: 13px;">${esc(STATUS_LABELS[r.status] ?? r.status)}</td>
             <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">${fmtTime(r.checkIn)}</td>
             <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">${fmtTime(r.checkOut)}</td>
@@ -262,6 +298,7 @@ Deno.serve(async (req: Request) => {
               <th style="padding: 6px 8px; font-size: 12px;">Employee</th>
               <th style="padding: 6px 8px; font-size: 12px;">Code</th>
               <th style="padding: 6px 8px; font-size: 12px;">Department</th>
+              <th style="padding: 6px 8px; font-size: 12px;">Shift Start</th>
               <th style="padding: 6px 8px; font-size: 12px;">Status</th>
               <th style="padding: 6px 8px; font-size: 12px;">Check In</th>
               <th style="padding: 6px 8px; font-size: 12px;">Check Out</th>
