@@ -134,6 +134,16 @@ Deno.serve(async (req: Request) => {
     const dayOfWeek = new Date(today).getDay()
     const isWeeklyOff = !isHoliday && weeklyOffDays.has(dayOfWeek)
 
+    if (isHoliday || isWeeklyOff) {
+      return ok({
+        processed: 0,
+        skipped: true,
+        reason: isHoliday ? 'holiday' : 'weekly_off',
+        date: today,
+        message: 'No daily summary email sent — today is a holiday or weekly off',
+      })
+    }
+
     const recordMap = new Map<string, (typeof records)[0]>()
     for (const r of records) {
       recordMap.set(r.employee_id, r)
