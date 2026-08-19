@@ -85,7 +85,7 @@ export function NotificationBell() {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <ScrollArea className="max-h-[65vh]">
+        <ScrollArea className="h-[65vh]">
           <div className="p-1">
             {isLoading ? (
               <div className="space-y-2 p-2">
