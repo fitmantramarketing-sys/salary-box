@@ -13,15 +13,16 @@ Deno.serve(async (req: Request) => {
     assertRole(actor, ['owner', 'hr', 'employee'])
 
 const {
-  leave_type_id,
-  from_date,
-  to_date,
-  is_half_day = false,
-  half_day_period = null,
-  reason,
-  attachment_path = null,
-  use_paid_for_excess,
-} = await req.json()
+      leave_type_id,
+      from_date,
+      to_date,
+      is_half_day = false,
+      half_day_period = null,
+      reason,
+      attachment_path = null,
+      use_paid_for_excess,
+      to = null,
+    } = await req.json()
 
     if (!leave_type_id || !from_date || !to_date || !reason) {
       return err('VALIDATION_ERROR', 'leave_type_id, from_date, to_date, and reason are required')
@@ -48,7 +49,7 @@ const {
 
     const { data: employee, error: empErr } = await supabase
       .from('employees')
-      .select('gender, reporting_manager_id')
+      .select('gender, reporting_manager_id, first_name, last_name')
       .eq('id', actor.actorId)
       .single()
 
@@ -254,17 +255,20 @@ const {
     }
 
     try {
-      const targetEmails = notifyTargets.map((a) => a.email).filter(Boolean).join(',')
+      const applicantName = [employee.first_name, employee.last_name].filter(Boolean).join(' ')
+      const targetEmails = to ? String(to) : notifyTargets.map((a) => a.email).filter(Boolean).join(',')
       if (targetEmails) {
         await sendEmail({
           to: targetEmails,
           subject: 'Leave Application Submitted',
           html: `
             <h2>Leave Application Submitted</h2>
-            <p><strong>Reason:</strong> ${reason}</p>
+            <p><strong>Applicant:</strong> ${applicantName}</p>
+            <p><strong>Leave Type:</strong> ${leaveType.name}</p>
             <p><strong>Dates:</strong> ${from_date} to ${to_date}</p>
-            <p><strong>Working Days:</strong> ${workingDays}${escalatedTo ? '<br/><em>Escalated to Owner (manager on leave)</em>' : ''}</p>
-            <p>Please review the application in the HR portal.</p>
+            <p><strong>Working Days:</strong> ${workingDays}${is_half_day ? ` (half day ${half_day_period})` : ''}${escalatedTo ? '<br/><em>Escalated to Owner (manager on leave)</em>' : ''}</p>
+            <p><strong>Reason:</strong> ${reason}</p>
+            <p><a href="https://salary-box-sigma.vercel.app/leave/applications/${application.id}">Review application in the HR portal</a></p>
             <hr />
             <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
           `,

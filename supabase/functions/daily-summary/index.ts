@@ -224,7 +224,7 @@ Deno.serve(async (req: Request) => {
         .map((a) => {
           const emp = a.employee as { first_name?: string; last_name?: string; employee_code?: string } | null
           const lt = a.leave_type as { name?: string } | null
-          return `<li style="font-size: 13px; margin-bottom: 4px;"><strong>${esc(emp?.first_name ?? '')} ${esc(emp?.last_name ?? '')}</strong> (${esc(emp?.employee_code ?? '')}) - ${esc(lt?.name ?? '')} - ${esc(a.from_date)} to ${esc(a.to_date)}</li>`
+          return `<li style="font-size: 13px; margin-bottom: 4px;"><strong>${esc(emp?.first_name ?? '')} ${esc(emp?.last_name ?? '')}</strong> (${esc(emp?.employee_code ?? '')}) - ${esc(lt?.name ?? '')} - ${esc(a.from_date)} to ${esc(a.to_date)} - ${a.working_days_count ?? 1} working day(s)${a.is_half_day ? ` (half day ${esc(a.half_day_period ?? '')})` : ''} - ${esc(a.reason ?? '')} - <a href="https://salary-box-sigma.vercel.app/leave/applications/${a.id}">View application</a></li>`
         })
         .join('')
       pendingSections.push(`<h3 style="font-size: 14px; margin: 20px 0 8px; color: #b45309;">Pending Leave Applications (${leaveApps.length})</h3><ul style="margin: 0; padding-left: 20px;">${items}</ul>`)

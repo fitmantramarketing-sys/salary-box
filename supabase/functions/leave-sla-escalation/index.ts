@@ -27,6 +27,16 @@ Deno.serve(async (req: Request) => {
 
     if (!owner) return ok({ processed: 0 })
 
+    const [{ data: employees }, { data: leaveTypes }] = await Promise.all([
+      supabase.from('employees').select('id, first_name, last_name'),
+      supabase.from('leave_types').select('id, name'),
+    ])
+
+    const nameById = new Map((employees ?? []).map((e) => [e.id, [e.first_name, e.last_name].filter(Boolean).join(' ')]))
+    const leaveTypeNameById = new Map((leaveTypes ?? []).map((t) => [t.id, t.name]))
+
+    const { to = null } = await req.json().catch(() => ({}))
+
     const { data: pendingApps } = await supabase
       .from('leave_applications')
       .select('*')
@@ -67,12 +77,16 @@ Deno.serve(async (req: Request) => {
 
         try {
           await sendEmail({
-            to: owner.email,
+            to: to ?? owner.email,
             subject: 'Leave SLA Breached',
             html: `
               <h2>Leave SLA Breached</h2>
-              <p>A leave request has been pending for <strong>${businessDaysSince} business days</strong>.</p>
-              <p>Please review the application in the HR portal.</p>
+              <p>A leave request from <strong>${nameById.get(app.employee_id) ?? 'Unknown'}</strong> has been pending for <strong>${businessDaysSince} business days</strong>.</p>
+              <p><strong>Leave Type:</strong> ${leaveTypeNameById.get(app.leave_type_id) ?? 'Unknown'}</p>
+              <p><strong>Dates:</strong> ${app.from_date} to ${app.to_date}</p>
+              <p><strong>Working Days:</strong> ${app.working_days_count ?? '—'}${app.is_half_day ? ` (half day ${app.half_day_period ?? ''})` : ''}</p>
+              <p><strong>Reason:</strong> ${app.reason}</p>
+              <p><a href="https://salary-box-sigma.vercel.app/leave/applications/${app.id}">Review the application in the HR portal</a></p>
               <hr />
               <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
             `,

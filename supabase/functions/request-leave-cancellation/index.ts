@@ -11,7 +11,7 @@ Deno.serve(async (req: Request) => {
     const actor = await getActor(req)
     assertRole(actor, ['owner', 'hr', 'employee'])
 
-    const { application_id, reason } = await req.json()
+    const { application_id, reason, to = null } = await req.json()
 
     if (!application_id) {
       return err('VALIDATION_ERROR', 'application_id is required')
@@ -50,6 +50,18 @@ Deno.serve(async (req: Request) => {
       })
       .eq('id', application_id)
 
+    const { data: applicant } = await supabase
+      .from('employees')
+      .select('first_name, last_name')
+      .eq('id', app.employee_id)
+      .maybeSingle()
+
+    const { data: leaveType } = await supabase
+      .from('leave_types')
+      .select('name')
+      .eq('id', app.leave_type_id)
+      .maybeSingle()
+
     const { data: admins } = await supabase
       .from('employees')
       .select('id, email')
@@ -68,16 +80,21 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-      const adminEmails = (admins ?? []).map((a) => a.email).filter(Boolean).join(',')
+      const applicantName = applicant ? [applicant.first_name, applicant.last_name].filter(Boolean).join(' ') : 'Unknown'
+      const adminEmails = to ? String(to) : (admins ?? []).map((a) => a.email).filter(Boolean).join(',')
       if (adminEmails) {
         await sendEmail({
           to: adminEmails,
           subject: 'Leave Cancellation Requested',
           html: `
             <h2>Leave Cancellation Requested</h2>
-            <p>An employee has requested cancellation of their approved leave.</p>
-            ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
-            <p>Please review the request in the HR portal.</p>
+            <p><strong>Applicant:</strong> ${applicantName}</p>
+            <p><strong>Leave Type:</strong> ${leaveType?.name ?? 'Unknown'}</p>
+            <p><strong>Dates:</strong> ${app.from_date} to ${app.to_date}</p>
+            <p><strong>Working Days:</strong> ${app.working_days_count ?? 1}${app.is_half_day ? ` (half day ${app.half_day_period ?? ''})` : ''}</p>
+            <p><strong>Original Reason:</strong> ${app.reason}</p>
+            ${reason ? `<p><strong>Cancellation Reason:</strong> ${reason}</p>` : ''}
+            <p><a href="https://salary-box-sigma.vercel.app/leave/applications/${application_id}">Review the request in the HR portal</a></p>
             <hr />
             <p style="color: #666; font-size: 12px;">This is an automated message from the HR system.</p>
           `,

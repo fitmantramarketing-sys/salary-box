@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { Bell } from 'lucide-react'
-import { useUnreadNotifications, useMarkAsRead, useMarkAllAsRead } from '@/features/notifications/hooks'
+import { useNotifications, useMarkAsRead, useMarkAllAsRead } from '@/features/notifications/hooks'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useNavigate } from 'react-router-dom'
+import { cn } from '@/lib/utils'
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -26,26 +27,26 @@ function timeAgo(dateStr: string): string {
 }
 
 export function NotificationBell() {
-  const { data: notifications, isLoading } = useUnreadNotifications()
+  const { data: notifications, isLoading } = useNotifications()
   const markRead = useMarkAsRead()
   const markAll = useMarkAllAsRead()
   const navigate = useNavigate()
 
   const prevCountRef = useRef(0)
-  const unreadCount = notifications?.length ?? 0
+  const unreadCount = notifications?.filter((n) => !n.is_read).length ?? 0
 
   useEffect(() => {
-    const count = notifications?.length ?? 0
+    const count = unreadCount
     if (count > 0 && count > prevCountRef.current) {
       const audio = new Audio('/notification.mp3')
       audio.volume = 0.5
       audio.play().catch(() => {})
     }
     prevCountRef.current = count
-  }, [notifications])
+  }, [unreadCount])
 
-  function handleClick(notification: { id: string; reference_id: string | null; reference_table: string | null; type: string }) {
-    markRead.mutate(notification.id)
+  function handleClick(notification: { id: string; is_read: boolean; reference_id: string | null; reference_table: string | null; type: string }) {
+    if (!notification.is_read) markRead.mutate(notification.id)
     if (notification.reference_id && notification.reference_table) {
       const path = notification.reference_table === 'leave_applications'
         ? `/leave/applications/${notification.reference_id}`
@@ -84,33 +85,41 @@ export function NotificationBell() {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <ScrollArea className="max-h-[60vh]">
-          {isLoading ? (
-            <div className="space-y-2 p-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
-          ) : !notifications || notifications.length === 0 ? (
-            <div className="flex flex-col items-center py-8 text-center text-sm text-muted-foreground">
-              <Bell className="mb-2 h-8 w-8 opacity-30" />
-              <p>No new notifications</p>
-            </div>
-          ) : (
-            notifications.map((n) => (
-              <DropdownMenuItem
-                key={n.id}
-                className="flex flex-col items-start gap-0.5 py-2.5 cursor-pointer"
-                onClick={() => handleClick(n)}
-              >
-                <div className="flex w-full items-center justify-between">
-                  <span className="text-sm font-medium">{n.title}</span>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">{timeAgo(n.created_at)}</span>
-                </div>
-                <span className="text-xs text-muted-foreground line-clamp-2">{n.body}</span>
-              </DropdownMenuItem>
-            ))
-          )}
+        <ScrollArea className="max-h-[65vh]">
+          <div className="p-1">
+            {isLoading ? (
+              <div className="space-y-2 p-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : !notifications || notifications.length === 0 ? (
+              <div className="flex flex-col items-center py-8 text-center text-sm text-muted-foreground">
+                <Bell className="mb-2 h-8 w-8 opacity-30" />
+                <p>No notifications</p>
+              </div>
+            ) : (
+              notifications.map((n) => (
+                <DropdownMenuItem
+                  key={n.id}
+                  className={cn(
+                    'flex flex-col items-start gap-0.5 py-2.5 cursor-pointer',
+                    !n.is_read && 'bg-accent/60'
+                  )}
+                  onClick={() => handleClick(n)}
+                >
+                  <div className="flex w-full items-center justify-between gap-2">
+                    <span className={cn('flex items-center gap-1.5 text-sm font-medium', n.is_read && 'text-muted-foreground')}>
+                      {!n.is_read && <span className="h-2 w-2 shrink-0 rounded-full bg-destructive" />}
+                      <span className="truncate">{n.title}</span>
+                    </span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">{timeAgo(n.created_at)}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground line-clamp-2">{n.body}</span>
+                </DropdownMenuItem>
+              ))
+            )}
+          </div>
         </ScrollArea>
       </DropdownMenuContent>
     </DropdownMenu>

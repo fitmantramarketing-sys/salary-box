@@ -17,7 +17,7 @@ export async function fetchAllNotifications(): Promise<Notification[]> {
     .from('notifications')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(100)
   if (error) throw error
   return data ?? []
 }

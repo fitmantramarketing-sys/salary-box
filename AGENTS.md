@@ -21,21 +21,25 @@ If a rule isn't in your current context, read the relevant doc above before
 inventing an answer.
 
 ## Current status — UPDATE THIS EVERY SESSION
-Last updated: 2026-08-15
+Last updated: 2026-08-19
 Active branch: experiment-new-agent
 
-### This session — Owner Summary Emails: Shift Start Column + Status Overhaul
-- **`daily-summary` (v7) and `midday-summary` (v4) redeployed** — owner attendance summary emails now:
+### This session — Enriched Owner Leave Emails (Applicant Details + App Link)
+- **4 Edge Functions redeployed** with richer owner-bound leave emails:
+  - **`submit-leave`**, **`request-leave-cancellation`**, **`leave-sla-escalation`** + **`daily-summary`** pending section.
+- Email HTML now includes: **applicant name**, **leave type name** (join), **dates + working days count** (half-day note when applicable), **reason**, and a clickable **"Review application in the HR portal" link** to `https://salary-box-sigma.vercel.app/leave/applications/{id}`.
+- `submit-leave`/`request-leave-cancellation`/`leave-sla-escalation` accept an optional `to` override in the request body (same pattern as daily/midday summaries) for test sends.
+- `leave-sla-escalation` now batch-fetches employee + leave-type name maps once instead of joining per app.
+- In-app notification bodies intentionally unchanged (emails only).
+- **Verified end-to-end**: created a temp pending leave app (applied 2026-08-12, SLA breached) → triggered `leave-sla-escalation` + `daily-summary` with `{"to":"mandviwalahuzefa53@gmail.com"}`, both `{processed: 1}` → emails sent to Huzefa; test app + generated in-app notification deleted afterwards.
+
+### Previous session — Owner Summary Emails: Shift Start Column + Status Overhaul
+- **`daily-summary` (v7/v8) and `midday-summary` (v4/v5) redeployed** — owner attendance summary emails now:
   - Add a **Shift Start** column (between Department and Status) showing each employee's effective shift start time via `resolveShift` → `getEffectiveTimes().start_time` (handles employee/department overrides, Saturday timings, night shifts).
   - No-record status logic: on leave / holiday / weekly off unchanged; else **"Shift Yet to Start"** when now < shift start, otherwise **"Absent"**. `not_checked_in` status removed entirely.
   - Midday summary tile renamed **"Not Checked In" → "Absent"**, counting only employees whose shift already started (pre-shift not counted absent).
-  - Verified end-to-end: both functions triggered manually (`{}` body), `{processed: 1}`, emails sent to owner (amanat@fitmantra.com).
-Current session: Resend SMTP configured + site_url updated to production. Password
-reset emails now go through Resend (noreply@hr.fitmantra.co.in) and link to
-https://salary-box-sigma.vercel.app. Verified end-to-end: Resend API + password
-reset via Supabase Auth SMTP both confirmed working (tested with non-scet.ac.in
-email). Remaining: fix migration naming conflict, re-seed reference data,
-reconcile origin/main, deploy frontend to Vercel.
+  - Both skip sending entirely on holidays/weekly offs (`{skipped: true, reason}`).
+  - Verified end-to-end: triggered manually, emails sent to owner and once to Huzefa for review.
 
 ### M2 — Complete Feature Set
 - **M2-1 CSV Export:** "Download CSV" button on EmployeesPage header
