@@ -49,15 +49,23 @@ Deno.serve(async (req: Request) => {
 
     for (const app of pendingApps) {
       const appliedAt = app.applied_at?.split('T')[0]
-      if (!appliedAt) continue
+      const todayStr = new Date().toISOString().split('T')[0]
+      if (!appliedAt || appliedAt >= todayStr) continue
 
-      const businessDaysSince = await countWorkingDays(
+      // countWorkingDays is inclusive of both endpoints, so count from the day
+      // AFTER the application date: elapsed full business days since applied.
+      const dayAfter = new Date(appliedAt + 'T00:00:00Z')
+      dayAfter.setUTCDate(dayAfter.getUTCDate() + 1)
+
+      const elapsedBusinessDays = await countWorkingDays(
         app.employee_id,
-        appliedAt,
-        new Date().toISOString().split('T')[0]
+        dayAfter.toISOString().split('T')[0],
+        todayStr
       )
 
-      if (businessDaysSince >= slaDays) {
+      // BR-LVE-06: escalate only when pending for MORE than the configured SLA
+      // business days (applied_at < now() - N business days).
+      if (elapsedBusinessDays > slaDays) {
         await supabase
           .from('leave_applications')
           .update({
@@ -69,7 +77,7 @@ Deno.serve(async (req: Request) => {
         await createNotification({
           recipientId: owner.id,
           title: 'Leave SLA Breached',
-          body: `Leave request from employee has been pending for ${businessDaysSince} business days.`,
+          body: `Leave request from employee has been pending for ${elapsedBusinessDays} business days.`,
           type: 'leave_sla_escalation',
           referenceId: app.id,
           referenceTable: 'leave_applications',
@@ -81,7 +89,7 @@ Deno.serve(async (req: Request) => {
             subject: 'Leave SLA Breached',
             html: `
               <h2>Leave SLA Breached</h2>
-              <p>A leave request from <strong>${nameById.get(app.employee_id) ?? 'Unknown'}</strong> has been pending for <strong>${businessDaysSince} business days</strong>.</p>
+              <p>A leave request from <strong>${nameById.get(app.employee_id) ?? 'Unknown'}</strong> has been pending for <strong>${elapsedBusinessDays} business days</strong>.</p>
               <p><strong>Leave Type:</strong> ${leaveTypeNameById.get(app.leave_type_id) ?? 'Unknown'}</p>
               <p><strong>Dates:</strong> ${app.from_date} to ${app.to_date}</p>
               <p><strong>Working Days:</strong> ${app.working_days_count ?? '—'}${app.is_half_day ? ` (half day ${app.half_day_period ?? ''})` : ''}</p>

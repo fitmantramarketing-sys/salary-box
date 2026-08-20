@@ -33,6 +33,11 @@ Active branch: experiment-new-agent
 - In-app notification bodies intentionally unchanged (emails only).
 - **Verified end-to-end**: created a temp pending leave app (applied 2026-08-12, SLA breached) → triggered `leave-sla-escalation` + `daily-summary` with `{"to":"mandviwalahuzefa53@gmail.com"}`, both `{processed: 1}` → emails sent to Huzefa; test app + generated in-app notification deleted afterwards.
 
+### This session — SLA Escalation Timing Fix (BR-LVE-06)
+- **Bug**: `leave-sla-escalation` counted business days **inclusively from the applied date** and fired at `>= slaDays`, so with `leave_sla_business_days = 2` a leave applied on day X was escalated on day X+1.
+- **Fix**: count now starts the day **after** the application (`applied_at + 1` → today) and fires only when elapsed business days **> slaDays** (`applied_at < now() - N business days` per BR-LVE-06).
+- **Verified**: temp app applied same day → skipped; temp app applied 2026-08-12 → escalated (`{processed: 1}`, email sent to Huzefa for review at `{"to":...}`). Test apps + notification deleted after.
+
 ### Previous session — Owner Summary Emails: Shift Start Column + Status Overhaul
 - **`daily-summary` (v7/v8) and `midday-summary` (v4/v5) redeployed** — owner attendance summary emails now:
   - Add a **Shift Start** column (between Department and Status) showing each employee's effective shift start time via `resolveShift` → `getEffectiveTimes().start_time` (handles employee/department overrides, Saturday timings, night shifts).
