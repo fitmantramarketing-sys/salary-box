@@ -179,8 +179,8 @@ Deno.serve(async (req: Request) => {
         department: dept?.name ?? '-',
         shiftStart,
         status,
-        checkIn: rec?.check_in_time ?? null,
-        checkOut: rec?.check_out_time ?? null,
+        checkIn: rec?.is_wfh ? (rec?.wfh_start_time ?? null) : (rec?.check_in_time ?? null),
+        checkOut: rec?.is_wfh ? (rec?.wfh_end_time ?? null) : (rec?.check_out_time ?? null),
         hours: rec?.total_hours ?? null,
         isLate: rec?.is_late ?? false,
       }
