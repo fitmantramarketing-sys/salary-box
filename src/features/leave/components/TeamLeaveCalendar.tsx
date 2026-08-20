@@ -87,7 +87,8 @@ export function TeamLeaveCalendar() {
     for (const app of applications) {
       const days = expandDateRange(app.from_date, app.to_date)
       for (const dayStr of days) {
-        const dayNum = new Date(dayStr).getDate()
+        if (dayStr < range.start || dayStr > range.end) continue
+        const dayNum = Number.parseInt(dayStr.slice(8, 10), 10)
         if (!map.has(app.employee_id)) {
           map.set(app.employee_id, new Map())
         }
@@ -96,7 +97,7 @@ export function TeamLeaveCalendar() {
       }
     }
     return map
-  }, [applications])
+  }, [applications, range.start, range.end])
 
   const prevMonth = () => {
     if (month === 0) { setYear((y) => y - 1); setMonth(11) }
